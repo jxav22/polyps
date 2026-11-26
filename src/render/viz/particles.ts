@@ -132,7 +132,7 @@ export function syncEdgeFlows(
 ): Particle[] {
   let list = updateParticles(particles, dt);
   const byId = new Map(nodes.map((n) => [n.id, n]));
-  const nutrients = list.filter((p) => p.kind === "nutrient").length;
+  const nutrients = list.filter((p) => p.kind === "nutrient" || p.kind === "waste").length;
   const target = Math.floor(edges.length * 3 * scale);
 
   if (nutrients < target && edges.length) {
@@ -140,10 +140,17 @@ export function syncEdgeFlows(
     const a = byId.get(e.from);
     const b = byId.get(e.to);
     if (a && b) {
-      const hue = (a.hue + b.hue) / 2;
+      // Waste-loop edges (chamber/bacteria) get amber particles
+      const wasteLoop =
+        (a.archetype === "chamber" && b.archetype === "bacteria") ||
+        (b.archetype === "chamber" && a.archetype === "bacteria") ||
+        a.archetype === "bacteria" ||
+        b.archetype === "bacteria";
+      const kind = wasteLoop && Math.random() < 0.45 ? "waste" : "nutrient";
+      const hue = kind === "waste" ? 38 : (a.hue + b.hue) / 2;
       list = list.concat(createFlowParticles(a, b, 1, hue));
-      // Bias velocity toward destination
       const p = list[list.length - 1];
+      p.kind = kind;
       const dx = b.pos.x - a.pos.x;
       const dy = b.pos.y - a.pos.y;
       const len = Math.hypot(dx, dy) || 1;
@@ -152,6 +159,7 @@ export function syncEdgeFlows(
       p.vy = (dy / len) * speed;
       p.x = a.pos.x;
       p.y = a.pos.y;
+      if (kind === "waste") p.size *= 1.15;
     }
   }
   return list;

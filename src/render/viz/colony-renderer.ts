@@ -20,6 +20,7 @@ import {
   buildEdgesFromNodes,
   hitTest,
   layoutColony,
+  lerpLayout,
 } from "./layout.ts";
 import { ARCHETYPE_HUE } from "./palette.ts";
 import {
@@ -203,9 +204,9 @@ export class ColonyRenderer {
   }
 
   private tickGrowth(dt: number): void {
-    if (!this.growing.size || !this.snapshot) return;
+    if (!this.snapshot) return;
     let dirty = false;
-    for (const [id, g] of this.growing) {
+    for (const [id, g] of [...this.growing.entries()]) {
       const next = Math.min(1, g + dt * 1.6);
       if (next >= 1) {
         this.growing.delete(id);
@@ -220,7 +221,9 @@ export class ColonyRenderer {
         ...n,
         growth: this.growing.get(n.id) ?? n.growth ?? 1,
       }));
-      this.laid = layoutColony(nodes, this.edges, this.opts.worldRadius);
+      const target = layoutColony(nodes, this.edges, this.opts.worldRadius);
+      // Ease toward new graph so budding doesn't teleport neighbors
+      this.laid = lerpLayout(this.laid, target, Math.min(1, dt * 6));
     }
   }
 
@@ -265,10 +268,31 @@ export class ColonyRenderer {
     ctx.rotate(sway * 0.002);
     ctx.translate(sway * 0.3, Math.cos(t * 0.28) * 1.5);
 
+    // Under-glow pooled at colony centroid
+    if (this.laid.length) {
+      let cx = 0;
+      let cy = 0;
+      for (const n of this.laid) {
+        cx += n.pos.x;
+        cy += n.pos.y;
+      }
+      cx /= this.laid.length;
+      cy /= this.laid.length;
+      const pool = ctx.createRadialGradient(cx, cy, 10, cx, cy, 160);
+      pool.addColorStop(0, "rgba(46, 230, 200, 0.07)");
+      pool.addColorStop(0.5, "rgba(60, 140, 200, 0.03)");
+      pool.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = pool;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 160, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     if (this.opts.showVessels) {
+      const byId = new Map(this.laid.map((n) => [n.id, n]));
       for (const e of this.edges) {
-        const a = this.laid.find((n) => n.id === e.from);
-        const b = this.laid.find((n) => n.id === e.to);
+        const a = byId.get(e.from);
+        const b = byId.get(e.to);
         if (a && b) drawConnection(ctx, a, b, t, e.flow ?? 0.45);
       }
     }

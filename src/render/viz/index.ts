@@ -9,7 +9,7 @@ export {
   vizNodesFromSim,
 } from "./colony-renderer.ts";
 export type { ColonyRendererOptions, VizSnapshot, VizNode, VizEdge, NodeClickHandler, LaidOutNode } from "./types.ts";
-export { layoutColony, hitTest, buildEdgesFromNodes } from "./layout.ts";
+export { layoutColony, hitTest, buildEdgesFromNodes, lerpLayout } from "./layout.ts";
 export { ARCHETYPE_HUE, DEPTH, GLOW, glowColor, hsla } from "./palette.ts";
 export { createBackground, drawBackground, updateBackground } from "./background.ts";
 export { drawArchetype, drawConnection } from "./archetypes.ts";

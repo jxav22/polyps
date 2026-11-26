@@ -5,6 +5,28 @@
 
 import type { LaidOutNode, Vec2, VizEdge, VizNode } from "./types.ts";
 
+/** Softly blend toward a new layout so growth doesn't teleport. */
+export function lerpLayout(
+  prev: LaidOutNode[],
+  next: LaidOutNode[],
+  alpha: number
+): LaidOutNode[] {
+  const a = Math.max(0, Math.min(1, alpha));
+  const prevById = new Map(prev.map((n) => [n.id, n]));
+  return next.map((n) => {
+    const p = prevById.get(n.id);
+    if (!p) return n;
+    return {
+      ...n,
+      pos: {
+        x: p.pos.x + (n.pos.x - p.pos.x) * a,
+        y: p.pos.y + (n.pos.y - p.pos.y) * a,
+      },
+      radius: p.radius + (n.radius - p.radius) * a,
+    };
+  });
+}
+
 const ARCHETYPE_RADIUS: Record<string, number> = {
   core: 28,
   tentacle: 16,

@@ -98,6 +98,12 @@ function drawCore(d: DrawCtx, node: LaidOutNode): void {
   const s = pulseScale(node, time);
   const { x, y } = node.pos;
   const r = node.radius * s;
+  // Outer halo ring — heartbeat
+  ctx.beginPath();
+  ctx.arc(x, y, r * (1.55 + Math.sin(time * 2.2) * 0.08), 0, Math.PI * 2);
+  ctx.strokeStyle = glowColor(node.hue, 0.18 + Math.sin(time * 2.2) * 0.08, 70);
+  ctx.lineWidth = 2;
+  ctx.stroke();
   fillGlow(ctx, x, y, r, node.hue, 0.55);
   blobPath(ctx, x, y, r, 5, time, 1);
   ctx.fillStyle = membraneColor(node.hue, 0.55);

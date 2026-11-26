@@ -78,10 +78,22 @@ export function drawBackground(
   ctx.fillStyle = murk;
   ctx.fillRect(0, 0, w, h);
 
-  // Caustics — shaders-lite sine mesh
+  // Distant bioluminescent curtains (submarine aurora)
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
   const t = bg.time;
+  for (let i = 0; i < 3; i++) {
+    const cx = w * (0.2 + i * 0.3) + Math.sin(t * 0.15 + i) * 40;
+    const curtain = ctx.createRadialGradient(cx, h * 0.35, 10, cx, h * 0.5, h * 0.55);
+    const hue = 175 + i * 35;
+    curtain.addColorStop(0, `hsla(${hue}, 70%, 55%, ${0.04 + light * 0.05})`);
+    curtain.addColorStop(0.5, `hsla(${hue + 20}, 60%, 40%, ${0.02 + light * 0.03})`);
+    curtain.addColorStop(1, "hsla(200, 50%, 20%, 0)");
+    ctx.fillStyle = curtain;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  // Caustics — shaders-lite sine mesh
   const bands = 5;
   for (let i = 0; i < bands; i++) {
     ctx.beginPath();
