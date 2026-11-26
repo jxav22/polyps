@@ -1,33 +1,46 @@
 # Polyps
 
+**Play:** [https://jxav22.github.io/polyps/](https://jxav22.github.io/polyps/)  
+*(GitHub Pages — goes live after the bridge pushes `main` + Pages is enabled on `/docs` or `gh-pages` / Actions.)*
+
 Systems-heavy incremental evolution: a primitive aquatic polyp becomes a specialised biological colony through compositional synergies.
 
-## Why not Godot?
+## Stack (not Godot)
 
-This sprint targets **browser-native TypeScript + Canvas 2D (Vite)** instead of Godot because:
+**Vite + TypeScript + Canvas 2D** in the browser. This is intentional for the sprint:
 
-- Cloud/agent VMs may not have Godot available or verifiable quickly
-- Pure TS simulation is trivial to unit-test (Vitest) and keep deterministic
-- Instant web preview (`npm run dev` / `npm run build`) with no export toolchain
-- Sibling agents can contribute data packs and render modules as plain TS
+- Instant web preview and static `dist/` deploy (GitHub Pages / itch.io)
+- Pure TS simulation is unit-tested (Vitest) and deterministic
+- Sibling agents ship data packs and viz as plain TS modules
 
-## Play
+There is **no Godot project** in this repo.
+
+## Local / dev
 
 ```bash
 npm install
-npm run dev
+npm run dev          # http://localhost:5173/polyps/ (base path matches Pages)
 ```
-
-Then open the local URL Vite prints (usually `http://localhost:5173`).
 
 ```bash
-npm test          # sim unit tests
-npm run build     # production web build
-npm run preview   # serve the build
-npm run balance   # pathway autopilot harness
+npm test             # sim unit tests
+npm run build        # static production site → dist/
+npm run preview      # serve dist locally (same /polyps/ base)
+npm run balance      # pathway autopilot harness
+npm run zip:itch     # zip dist/ for itch.io HTML5 upload
 ```
 
-**Do not deploy publicly** without permission — local preview only.
+`vite.config.ts` sets `base: "/polyps/"` for the project Pages URL. For a custom domain at site root, change `base` to `'/'`.
+
+## itch.io
+
+```bash
+npm run zip:itch
+```
+
+Rebuilds `dist/` with `base: './'` (itch-safe relative URLs) and writes `polyps-itch.zip`. Upload as an **HTML5** game; entry = `index.html`.  
+
+For GitHub Pages, use `npm run build` instead (`base: /polyps/`).
 
 ## Loop
 
@@ -37,20 +50,21 @@ npm run balance   # pathway autopilot harness
 4. Feel **synergies** (waste loop, sensor hunt, colonial bloom, vessel grid, photo-shield)
 5. **Adapt** with genetic insight; optionally **Spore Drift** (prestige)
 
-Saves auto-write to `localStorage` (`polyps.save.v1`).
+Saves write to `localStorage` (`polyps.save.v1`).
 
 ## Layout
 
 ```
 src/
   sim/       # pure deterministic simulation
-  data/      # structures, adaptations, synergies
-  render/    # canvas colony view
-  ui/        # organic HUD
+  data/      # structures, adaptations, synergies, prestige
+  render/    # ColonyRenderer (Canvas 2D)
+  ui/        # HUD
   save/      # versioned localStorage
   balance/   # autopilot harness
+dist/        # static site from npm run build (Pages / itch)
 ```
 
 ## Docs
 
-See `docs/` in the project store for DESIGN / EXTENDING / HANDOFF after the sprint handoff pass.
+See store `docs/` for DESIGN / EXTENDING / HANDOFF.
