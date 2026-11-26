@@ -1,7 +1,8 @@
 # Polyps
 
-**Play:** [https://jxav22.github.io/polyps/](https://jxav22.github.io/polyps/)  
-*(GitHub Pages — goes live after the bridge pushes `main` + Pages is enabled on `/docs` or `gh-pages` / Actions.)*
+**Play:** https://jxav22.github.io/polyps/  
+
+GitHub Pages deploys from `main` via `.github/workflows/pages.yml` (`npm run build` → `dist/`, Vite `base: '/polyps/'`). Enable **Settings → Pages → Source: GitHub Actions** once if the URL 404s.
 
 Systems-heavy incremental evolution: a primitive aquatic polyp becomes a specialised biological colony through compositional synergies.
 
