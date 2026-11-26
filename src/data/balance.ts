@@ -85,11 +85,11 @@ export const AUTOPILOTS = {
     "absorber",
     "tentacle",
     "chamber",
-    "symbiont",
+    "bud", // fork landmark ≤480s — do not gate behind membrane spam
     "vessel",
     "vessel",
-    "bud",
     "nest",
+    "symbiont",
     "membrane",
   ],
   metabolic: [
@@ -97,9 +97,9 @@ export const AUTOPILOTS = {
     "tentacle",
     "chamber",
     "bacteria",
-    "vessel",
-    "filter_plate",
+    "filter_plate", // fork landmark — chamber-gated
     "mineral_gland",
+    "vessel",
     "membrane",
   ],
 } as const;

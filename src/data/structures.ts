@@ -208,8 +208,8 @@ export const STRUCTURES: StructureDef[] = [
     description:
       "Moves resources between neighbors. Alone: mild upkeep tax. In a grid: specialised clusters thrive.",
     tags: ["vessel", "transport", "colonial"],
-    cost: { biomass: 6, energy: 3 },
-    upkeep: { energy: -0.12 },
+    cost: { biomass: 5, energy: 2 },
+    upkeep: { energy: -0.1 },
     produce: {},
     adjacencyBonus: {
       requireTags: ["vessel", "transport"],
@@ -222,7 +222,8 @@ export const STRUCTURES: StructureDef[] = [
       ],
     },
     envAffinity: { current: 0.4 },
-    unlock: { requiresStructures: { chamber: 1 }, requiresGenetic: 4 },
+    // balance-verified: chamber:1 genetic:3 so colonial/metabolic logistics by ~8 min
+    unlock: { requiresStructures: { chamber: 1 }, requiresGenetic: 3 },
     maxCount: 14,
     visual: { archetype: "vessel", hue: 195, pulse: 0.6 },
   },
@@ -232,9 +233,10 @@ export const STRUCTURES: StructureDef[] = [
     description:
       "Spends biomass and genetic to spawn a daughter site that inherits chamber/symbiont traits. Crowding without vessels collapses yields.",
     tags: ["bud", "colonial", "reproduce"],
-    cost: { biomass: 12, genetic: 2, energy: 5 },
-    upkeep: { nutrients: -0.15, energy: -0.1 },
-    produce: { genetic: 0.04 },
+    // balance-verified: membrane gate removed — stockpile genetic was blocking fork
+    cost: { biomass: 10, genetic: 1, energy: 4 },
+    upkeep: { nutrients: -0.12, energy: -0.08 },
+    produce: { genetic: 0.05 },
     adjacencyBonus: {
       requireTags: ["digest", "photo"],
       modifiers: [
@@ -247,8 +249,8 @@ export const STRUCTURES: StructureDef[] = [
       ],
     },
     envAffinity: { light: 0.4, ambientNutrients: 0.3 },
-    // Membrane optional — vessel logistics also unlocks colonial path
-    unlock: { requiresStructures: { chamber: 1, vessel: 1 }, requiresGenetic: 6 },
+    // Fork by ≤480s: chamber only (membrane/vessel optional for bloom quality, not unlock)
+    unlock: { requiresStructures: { chamber: 1 }, requiresGenetic: 3 },
     maxCount: 5,
     visual: { archetype: "bud", hue: 310, pulse: 0.9 },
   },
@@ -285,9 +287,10 @@ export const STRUCTURES: StructureDef[] = [
     description:
       "Condenses scarce minerals from current-borne grit. Competes with absorbers for flow — place on vessel edges.",
     tags: ["minerals", "metabolic", "feed"],
-    cost: { biomass: 8, energy: 5, waste: 2 },
-    upkeep: { energy: -0.18 },
-    produce: { minerals: 0.12 },
+    // balance-verified: metabolic dead end — cheaper + earlier genetic; vessel optional for spine bonus
+    cost: { biomass: 6, energy: 3, waste: 1 },
+    upkeep: { energy: -0.12 },
+    produce: { minerals: 0.14 },
     adjacencyBonus: {
       requireTags: ["vessel", "transport"],
       modifiers: [
@@ -299,7 +302,7 @@ export const STRUCTURES: StructureDef[] = [
       ],
     },
     envAffinity: { current: 0.9, ambientNutrients: 0.2 },
-    unlock: { requiresStructures: { vessel: 1 }, requiresGenetic: 5 },
+    unlock: { requiresStructures: { chamber: 1 }, requiresGenetic: 4 },
     maxCount: 4,
     visual: { archetype: "chamber", hue: 220, pulse: 0.45 },
   },
@@ -329,7 +332,7 @@ export const STRUCTURES: StructureDef[] = [
     description:
       "Sieves current for nutrients without tentacle energy tax. Weak in still water; pairs with vessels on the rim.",
     tags: ["feed", "filter", "metabolic"],
-    cost: { biomass: 5, minerals: 2, energy: 3 },
+    cost: { biomass: 4, minerals: 1, energy: 2 },
     upkeep: { energy: -0.05 },
     produce: { nutrients: 0.4 },
     adjacencyBonus: {
@@ -344,7 +347,8 @@ export const STRUCTURES: StructureDef[] = [
       ],
     },
     envAffinity: { current: 1.0, ambientNutrients: 0.4 },
-    unlock: { requiresStructures: { chamber: 1, vessel: 1 }, requiresGenetic: 6 },
+    // Metabolic fork companion to gland — chamber gate only; vessel boosts via adjacency
+    unlock: { requiresStructures: { chamber: 1 }, requiresGenetic: 3 },
     maxCount: 6,
     visual: { archetype: "membrane", hue: 175, pulse: 0.5 },
   },

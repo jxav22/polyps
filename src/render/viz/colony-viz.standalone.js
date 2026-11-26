@@ -527,9 +527,9 @@
       const p2 = bezierPoint(a.pos, c, b.pos, Math.min(0.999, u + 0.04));
       const ang = Math.atan2(p2.y - pt.y, p2.x - pt.x);
       ctx.beginPath(); ctx.fillStyle = glowColor(hue, 0.45 + flow * 0.4, 80);
-      ctx.arc(pt.x, pt.y, 2.2 + flow * 1.2, 0, Math.PI * 2); ctx.fill();
+      ctx.arc(pt.x, pt.y, 2.8 + flow * 1.4, 0, Math.PI * 2); ctx.fill();
       ctx.save(); ctx.translate(pt.x, pt.y); ctx.rotate(ang);
-      ctx.beginPath(); ctx.moveTo(4.5, 0); ctx.lineTo(-1.5, 3); ctx.lineTo(-1.5, -3); ctx.closePath();
+      ctx.beginPath(); ctx.moveTo(7, 0); ctx.lineTo(-2.5, 4.5); ctx.lineTo(-2.5, -4.5); ctx.closePath();
       ctx.fillStyle = glowColor(hue, 0.55 + flow * 0.3, 88); ctx.fill(); ctx.restore();
     }
     ctx.restore();
