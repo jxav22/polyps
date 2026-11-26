@@ -20,8 +20,8 @@ export const STRUCTURES: StructureDef[] = [
     tags: ["core", "feed", "starter"],
     cost: { biomass: 0, energy: 0 },
     upkeep: {},
-    produce: { nutrients: 0.35 },
-    envAffinity: { ambientNutrients: 0.8, current: 0.3 },
+    produce: { nutrients: 0.35, energy: 0.22 },
+    envAffinity: { ambientNutrients: 0.8, current: 0.3, light: 0.35 },
     unlock: {},
     maxCount: 6,
     visual: { archetype: "core", hue: 168, pulse: 0.4 },
@@ -32,8 +32,8 @@ export const STRUCTURES: StructureDef[] = [
     description:
       "Active feeding arm. Pulls nutrients hard but burns energy — idle tentacles starve the colony.",
     tags: ["feed", "predation", "limb"],
-    cost: { biomass: 4, energy: 2 },
-    upkeep: { energy: -0.15 },
+    cost: { biomass: 4, energy: 1 },
+    upkeep: { energy: -0.05 },
     produce: { nutrients: 0.9 },
     adjacencyBonus: {
       requireTags: ["sensor"],
@@ -56,8 +56,8 @@ export const STRUCTURES: StructureDef[] = [
     description:
       "Converts nutrients into energy and waste. Without a waste sink, toxicity throttles everything.",
     tags: ["digest", "metabolic", "core"],
-    cost: { biomass: 6, energy: 3, nutrients: 4 },
-    upkeep: { energy: -0.1 },
+    cost: { biomass: 6, energy: 1, nutrients: 4 },
+    upkeep: { energy: -0.08 },
     convert: [
       { from: "nutrients", to: "energy", rate: 0.8, efficiency: 0.7 },
       // waste is emitted as byproduct of digestion (sim applies waste = rate * (1-efficiency) or separate)

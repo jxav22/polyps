@@ -259,18 +259,20 @@ function tickOnce(state: ColonyState, dt: number): ColonyState {
   // Ambient mineral trickle from t=0 (prevents membrane/symbiont soft-lock)
   delta.minerals += (0.05 + env.ambientNutrients * 0.04) * rate * dt;
   delta.genetic += (Object.keys(counts).length > 3 ? 0.045 : 0.02) * rate * dt;
+  // Soft basal energy from light so tentacle upkeep cannot zero the colony pre-chamber
+  delta.energy += env.light * 0.18 * rate * dt;
 
   /**
    * Core anabolism — live harness found colonial dead without biomass income.
-   * Convert energy+nutrients → biomass while keeping an energy reserve.
+   * Convert energy+nutrients → biomass while keeping a small energy reserve.
    */
-  const energyReserve = 3;
+  const energyReserve = 1.5;
   const availEnergy = state.resources.energy + delta.energy - energyReserve;
   const availNutrients = state.resources.nutrients + delta.nutrients;
   if (availEnergy > 0 && availNutrients > 0.5) {
-    const synthRate = Math.min(0.4, availEnergy * 0.15, availNutrients * 0.12) * rate * dt;
+    const synthRate = Math.min(0.35, availEnergy * 0.12, availNutrients * 0.1) * rate * dt;
     delta.nutrients -= synthRate;
-    delta.energy -= synthRate * 0.9;
+    delta.energy -= synthRate * 0.75;
     delta.biomass += synthRate * 1.05;
   }
 

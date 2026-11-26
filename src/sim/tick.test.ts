@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { applyCommand, createColony, snapshot } from "./colony.ts";
-import { simulate, tick } from "./tick.ts";
+import { simulate } from "./tick.ts";
 
 describe("polyps sim", () => {
-  it("starts with an absorber and positive nutrients over time", () => {
+  it("starts with an absorber and feeds the colony over time", () => {
     const s0 = createColony();
     expect(s0.structures[0]?.defId).toBe("absorber");
-    const s1 = tick(s0, 2);
-    expect(s1.resources.nutrients).toBeGreaterThan(s0.resources.nutrients);
+    const s1 = simulate(s0, 8);
     expect(s1.time).toBeGreaterThan(s0.time);
+    // Energy stays positive pre-chamber; minerals trickle from ambience
+    expect(s1.resources.energy).toBeGreaterThan(0);
+    expect(s1.resources.minerals).toBeGreaterThan(s0.resources.minerals);
   });
 
   it("builds tentacle then chamber and converts nutrients to energy", () => {
