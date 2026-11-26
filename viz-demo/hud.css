@@ -1,0 +1,148 @@
+/**
+ * Organic HUD shell suggestions for Polyps.
+ * Restrained — organism is the UI; chrome stays quiet.
+ *
+ * Usage: import "./render/hud.css" (or link from index.html)
+ */
+
+:root {
+  --polyps-abyss: #02060c;
+  --polyps-deep: #061018;
+  --polyps-panel: rgba(8, 28, 38, 0.72);
+  --polyps-stroke: rgba(94, 210, 220, 0.22);
+  --polyps-glow: #2ee6c8;
+  --polyps-glow-dim: rgba(46, 230, 200, 0.35);
+  --polyps-text: #c8e8f0;
+  --polyps-muted: #6a8a96;
+  --polyps-danger: #ff7a6b;
+  --polyps-font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --polyps-font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+.polyps-shell {
+  position: relative;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--polyps-abyss);
+  color: var(--polyps-text);
+  font-family: var(--polyps-font-body);
+  overflow: hidden;
+}
+
+.polyps-shell canvas#colony {
+  display: block;
+  width: 100%;
+  height: 100vh;
+  touch-action: none;
+}
+
+/* Soft top resource strip — not a dashboard card grid */
+.polyps-vitals {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 1.25rem;
+  justify-content: center;
+  padding: 0.85rem 1.25rem;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(2, 8, 14, 0.65),
+    rgba(2, 8, 14, 0)
+  );
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  color: var(--polyps-muted);
+}
+
+.polyps-vitals b {
+  color: var(--polyps-glow);
+  font-weight: 500;
+  margin-left: 0.35rem;
+}
+
+/* Selection whisper — bottom-left, no card chrome */
+.polyps-inspect {
+  position: absolute;
+  left: 1.25rem;
+  bottom: 1.25rem;
+  max-width: 16rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--polyps-stroke);
+  background: transparent;
+  pointer-events: none;
+}
+
+.polyps-inspect h2 {
+  margin: 0 0 0.25rem;
+  font-family: var(--polyps-font-display);
+  font-weight: 450;
+  font-size: 1.15rem;
+  color: var(--polyps-text);
+}
+
+.polyps-inspect p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--polyps-muted);
+}
+
+/* Radial grow hint — center-follow optional; keep sparse */
+.polyps-grow-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%);
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--polyps-stroke);
+  border-radius: 999px;
+  background: var(--polyps-panel);
+  color: var(--polyps-text);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  backdrop-filter: blur(8px);
+  opacity: 0.85;
+  transition: opacity 200ms ease, border-color 200ms ease;
+}
+
+.polyps-grow-hint:hover,
+.polyps-grow-hint:focus-visible {
+  opacity: 1;
+  border-color: var(--polyps-glow-dim);
+  outline: none;
+  box-shadow: 0 0 18px rgba(46, 230, 200, 0.18);
+}
+
+.polyps-grow-hint:active {
+  transform: translateX(-50%) scale(0.97);
+}
+
+/* Pulse keyframes for resource ticks */
+@keyframes polyps-pulse-glow {
+  0%,
+  100% {
+    text-shadow: 0 0 0 transparent;
+  }
+  50% {
+    text-shadow: 0 0 12px var(--polyps-glow-dim);
+  }
+}
+
+.polyps-vitals b.is-hot {
+  animation: polyps-pulse-glow 1.2s ease-in-out infinite;
+}
+
+@media (max-width: 640px) {
+  .polyps-vitals {
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    justify-content: flex-start;
+  }
+  .polyps-inspect {
+    max-width: calc(100% - 2.5rem);
+  }
+}
