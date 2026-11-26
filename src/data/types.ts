@@ -2,7 +2,7 @@
  * Content-pack types extending the shared sim interfaces.
  * Lead owns runtime evaluation; this pack only declares data.
  */
-import type { EnvId, Modifier, ResourceBag, StructureId } from "../polyps-interfaces";
+import type { EnvId, Modifier, ResourceBag, StructureId } from "../polyps-interfaces.ts";
 
 export type { EnvId, Modifier, ResourceBag, StructureId };
 
@@ -66,34 +66,68 @@ export interface RelicDef {
   id: string;
   name: string;
   description: string;
+  /** Short UI goal line shown in midgame journal */
+  goalHint: string;
   /** How the relic is earned before/during Spore Drift */
   earn: {
     requiresFlags?: string[];
+    /** If set, any one flag is enough (OR). requiresFlags stays AND. */
+    anyFlags?: string[];
     requiresAdaptations?: string[];
+    /** Any one adaptation from the list */
+    anyAdaptations?: string[];
     requiresPrestige?: number;
     requiresStructuresBuilt?: Partial<Record<string, number>>;
+    /** Lifetime genetic earned this run (not stockpile) */
+    minGeneticLifetime?: number;
   };
   modifiers: Modifier[];
   unlockStructures?: StructureId[];
   unlockAdaptations?: string[];
   permanent: true;
+  /** Pathway badge for UI grouping */
+  pathway?: "predatory" | "photo" | "symbiotic" | "colonial" | "metabolic" | "hybrid" | "prestige";
+}
+
+export interface PrestigeSignalDef {
+  id: string;
+  /** Flag the sim should set when `when` is met */
+  flag: string;
+  description: string;
+  when: {
+    minTime?: number;
+    /** Lifetime genetic earned (spend does not erase progress) */
+    minGeneticLifetime?: number;
+    minBiomassPeak?: number;
+    minStructures?: Partial<Record<string, number>>;
+    anySynergy?: string[];
+    anyAdaptation?: string[];
+    requiresFlags?: string[];
+  };
 }
 
 export interface PrestigeTrackDef {
   id: "sporeDrift";
   name: string;
   description: string;
-  /** Soft visibility gate — show UI when any condition met */
+  /** Soft visibility gate — show UI when ANY top-level group matches */
   visibleWhen: {
     minTime?: number;
+    /** Prefer lifetime over stockpile — adaptations spend genetic */
+    minGeneticLifetime?: number;
+    /** Deprecated stockpile check — avoid for visibility */
     minGenetic?: number;
     minBiomassPeak?: number;
     requiresFlags?: string[];
+    anyFlags?: string[];
   };
   /** Cost / threshold to trigger a drift */
   driftCost: {
     minBiomass: number;
-    minGenetic: number;
+    /** Lifetime genetic this run, not current stockpile */
+    minGeneticLifetime: number;
+    /** Optional stockpile floor so drift isn't free after spending everything */
+    minGeneticStockpile?: number;
   };
   /** What carries over */
   keep: {
@@ -108,6 +142,18 @@ export interface PrestigeTrackDef {
     unlockFlags: string[];
     unlockAdaptations?: string[];
     unlockStructures?: StructureId[];
+  }>;
+  /** Ordered midgame goals toward first drift */
+  midgameGoals: Array<{
+    id: string;
+    title: string;
+    body: string;
+    completeWhen: {
+      hasFlags?: string[];
+      hasStructures?: Partial<Record<string, number>>;
+      hasRelic?: string[];
+      minGeneticLifetime?: number;
+    };
   }>;
 }
 

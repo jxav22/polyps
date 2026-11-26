@@ -1,6 +1,8 @@
 import { ADAPTATION_MAP } from "../data/adaptations.ts";
 import { GLOBAL_RATE, HARD_CAPS, SOFT_CAPS } from "../data/balance.ts";
+import { PRESTIGE_SIGNALS } from "../data/prestige.ts";
 import { STRUCTURE_MAP } from "../data/structures.ts";
+import type { PrestigeSignalDef } from "../data/types.ts";
 import {
   SYNERGIES,
   SYNERGY_MODIFIERS,
@@ -277,13 +279,30 @@ function tickOnce(state: ColonyState, dt: number): ColonyState {
   }
 
   let resources = addBag(state.resources, delta);
+
+  // Softcap pressure: excess biomass past soft band bleeds into genetic novelty
+  // so the hard wall is a signal, not a dead stop.
+  const BIOMASS_SOFT = SOFT_CAPS.biomassSoft;
+  const BIOMASS_HARD = SOFT_CAPS.biomassHard;
+  if (resources.biomass > BIOMASS_SOFT && delta.biomass > 0) {
+    const overflow = Math.min(delta.biomass, resources.biomass - BIOMASS_SOFT);
+    const bleed = overflow * 0.35;
+    resources.biomass -= bleed;
+    delta.genetic += bleed * 0.08;
+    resources.genetic += bleed * 0.08;
+  }
+
   resources.nutrients = softCap(resources.nutrients, 80, 140);
   resources.energy = softCap(resources.energy, 70, 120);
-  resources.biomass = softCap(resources.biomass, 60, 100);
+  resources.biomass = softCap(resources.biomass, BIOMASS_SOFT, BIOMASS_HARD);
   resources.waste = softCap(resources.waste, 40, 70);
   resources.minerals = softCap(resources.minerals, 40, 70);
   resources.genetic = softCap(resources.genetic, 40, 80);
   resources = clampBag(resources);
+
+  const geneticGain = Math.max(0, delta.genetic);
+  const geneticLifetime = (state.geneticLifetime ?? 0) + geneticGain;
+  const biomassPeak = Math.max(state.biomassPeak ?? 0, resources.biomass);
 
   const rates: Partial<ResourceBag> = {};
   for (const id of RESOURCE_IDS) {
@@ -296,26 +315,41 @@ function tickOnce(state: ColonyState, dt: number): ColonyState {
     flags = [...flags, "can-adapt"];
     message = "Genetic insight ready — adapt the colony.";
   }
-  if (state.time > 300 && !flags.includes("seen_midgame")) {
-    flags = [...flags, "seen_midgame"];
+
+  const nextTime = state.time + dt;
+  const signalCtx = {
+    time: nextTime,
+    geneticLifetime,
+    biomassPeak,
+    counts,
+    adaptations: state.adaptations,
+    synergies: activeSynergies,
+    flags,
+  };
+  const newlySet: string[] = [];
+  for (const signal of PRESTIGE_SIGNALS) {
+    if (flags.includes(signal.flag)) continue;
+    if (!prestigeSignalApplies(signal, signalCtx)) continue;
+    flags = [...flags, signal.flag];
+    newlySet.push(signal.flag);
+    // Keep can-prestige alias for HUD / commands
+    if (signal.flag === "prestige_ready" && !flags.includes("can-prestige")) {
+      flags = [...flags, "can-prestige"];
+    }
   }
-
-  // Prestige signal: genetic stock, lifetime novelty, or spore vault
-  const geneticLifetime = Math.max(resources.genetic, state.resources.genetic);
-  const prestigeReady =
-    (counts["spore_vault"] ?? 0) >= 1 ||
-    (state.structures.length >= 5 &&
-      state.time >= 720 &&
-      (resources.genetic >= 15 || geneticLifetime >= 16));
-
-  if (prestigeReady && !flags.includes("can-prestige") && !flags.includes("prestige_ready")) {
-    flags = [...flags, "can-prestige", "prestige_ready"];
+  if (newlySet.includes("seen_prestige_ui")) {
     message = "Spore Drift visible on the horizon.";
+  } else if (newlySet.includes("prestige_ready")) {
+    message = "Lineage pressure builds — Spore Drift approaches.";
+  } else if (newlySet.includes("pathway_committed")) {
+    message = "A pathway identity takes hold.";
+  } else if (newlySet.includes("seen_midgame")) {
+    message = "Midgame currents — compose synergies toward Drift.";
   }
 
   return {
     ...state,
-    time: state.time + dt,
+    time: nextTime,
     env,
     structures,
     resources,
@@ -323,7 +357,54 @@ function tickOnce(state: ColonyState, dt: number): ColonyState {
     activeSynergies,
     flags,
     message,
+    geneticLifetime,
+    biomassPeak,
   };
+}
+
+/** Evaluate PRESTIGE_SIGNALS.when — progress clauses OR; time/flags AND. */
+function prestigeSignalApplies(
+  signal: PrestigeSignalDef,
+  ctx: {
+    time: number;
+    geneticLifetime: number;
+    biomassPeak: number;
+    counts: Record<string, number>;
+    adaptations: string[];
+    synergies: string[];
+    flags: string[];
+  },
+): boolean {
+  const when = signal.when;
+  if (when.minTime !== undefined && ctx.time < when.minTime) return false;
+  if (when.requiresFlags?.length) {
+    if (!when.requiresFlags.every((f) => ctx.flags.includes(f))) return false;
+  }
+
+  const clauses: boolean[] = [];
+  if (when.minGeneticLifetime !== undefined) {
+    clauses.push(ctx.geneticLifetime >= when.minGeneticLifetime);
+  }
+  if (when.minBiomassPeak !== undefined) {
+    clauses.push(ctx.biomassPeak >= when.minBiomassPeak);
+  }
+  if (when.minStructures) {
+    clauses.push(
+      Object.entries(when.minStructures).every(
+        ([id, n]) => (ctx.counts[id] ?? 0) >= (n ?? 0),
+      ),
+    );
+  }
+  if (when.anySynergy?.length) {
+    clauses.push(when.anySynergy.some((s) => ctx.synergies.includes(s)));
+  }
+  if (when.anyAdaptation?.length) {
+    clauses.push(when.anyAdaptation.some((a) => ctx.adaptations.includes(a)));
+  }
+
+  // Flags/time-only signals (e.g. seen_prestige_ui from requiresFlags)
+  if (clauses.length === 0) return true;
+  return clauses.some(Boolean);
 }
 
 function tagChannelMult(

@@ -58,5 +58,7 @@ function migrate(raw: ColonyState): ColonyState {
     rates: raw.rates ?? base.rates,
     activeSynergies: raw.activeSynergies ?? [],
     gameSpeed: raw.gameSpeed ?? 1.35,
+    geneticLifetime: raw.geneticLifetime ?? (raw as { geneticEarned?: number }).geneticEarned ?? 0,
+    biomassPeak: raw.biomassPeak ?? raw.resources?.biomass ?? 0,
   };
 }

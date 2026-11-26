@@ -41,3 +41,18 @@ See `HARD_CAPS` in `balance.ts` — especially waste-loop convert.rate mult ≤ 
 ## Visual archetypes
 
 New structures reuse existing archetypes (`filter_plate`→membrane, `nest`→bud, `lumophore`→sensor). No new archetype enum required for v1.
+
+## Prestige signals (T+40)
+
+Do **not** show Spore Drift from genetic stockpile ≥15. Adaptations spend stockpile; harness never trips.
+
+Import `PRESTIGE_SIGNALS` from `prestige.ts` and set flags in tick:
+
+1. `seen_midgame` — time≥300 + (adaptation OR chamber + lifetime G≥4)
+2. `pathway_committed` — synergy landmark or lifetime G≥8
+3. `prestige_ready` — lifetime G≥16 / biomass peak / spore_vault
+4. `seen_prestige_ui` — ready+midgame, or time≥900 fallback
+
+Track `geneticLifetime` separately from stockpile. Drift cost uses `minGeneticLifetime` (+ optional stockpile floor 2).
+
+Relic earn: honor `anyFlags` / `anyAdaptations` as OR groups.

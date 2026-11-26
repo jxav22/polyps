@@ -23,6 +23,9 @@ export const SOFT_CAPS = {
   budCrowdYieldFloor: 0.7,
   membraneCurrentFeedPenaltyPer: 0.04,
   membraneCurrentFeedPenaltyMax: 0.25,
+  /** Biomass band — overflow bleeds to genetic; hard wall was choking midgame at 100 */
+  biomassSoft: 80,
+  biomassHard: 140,
 } as const;
 
 /**
@@ -96,9 +99,9 @@ export const AUTOPILOTS = {
     "absorber",
     "tentacle",
     "chamber",
+    "mineral_gland", // fork landmark — prefer gland before filter (needs minerals)
     "bacteria",
-    "filter_plate", // fork landmark — chamber-gated
-    "mineral_gland",
+    "filter_plate",
     "vessel",
     "membrane",
   ],

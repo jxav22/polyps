@@ -120,9 +120,16 @@ export function createHud(mount: HTMLElement): HudApi {
 
           <div class="ops">
             ${
-              snap.flags.includes("can-prestige")
-                ? `<button class="prestige" data-prestige="1">Spore Drift</button>`
-                : ""
+              snap.flags.includes("seen_prestige_ui") ||
+              snap.flags.includes("can-prestige") ||
+              snap.flags.includes("prestige_ready")
+                ? `<button class="prestige" data-prestige="1">Spore Drift</button>
+                   <p class="mute" style="margin:0.35rem 0 0;font-size:0.75rem">Release spores — relics endure.</p>`
+                : snap.flags.includes("pathway_committed")
+                  ? `<p class="mute" style="margin:0;font-size:0.75rem">Lineage deepens — Spore Drift needs lifetime genetic ≥16.</p>`
+                  : snap.flags.includes("seen_midgame")
+                    ? `<p class="mute" style="margin:0;font-size:0.75rem">Compose a synergy — Drift waits on lineage, not stockpile.</p>`
+                    : ""
             }
             <button class="ghost" data-save="1">Save</button>
             <button class="ghost" data-reset="1">New Colony</button>

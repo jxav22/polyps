@@ -83,6 +83,45 @@ describe("polyps sim", () => {
     expect(grown.resources.biomass).toBeGreaterThanOrEqual(startB);
   });
 
+  it("PRESTIGE_SIGNALS trip on geneticLifetime ≥16, not stockpile", () => {
+    let s = createColony();
+    s = {
+      ...s,
+      time: 320,
+      flags: ["started", "seen_midgame", "pathway_committed"],
+      geneticLifetime: 16,
+      biomassPeak: 50,
+      adaptations: ["grasp_reflex", "tight_cycles"],
+      activeSynergies: ["waste_loop"],
+      resources: {
+        nutrients: 40,
+        energy: 30,
+        biomass: 55,
+        genetic: 2, // stockpile spent — old heuristic would miss
+        minerals: 10,
+        waste: 5,
+      },
+    };
+    s = simulate(s, 1);
+    expect(s.flags).toContain("prestige_ready");
+    expect(s.flags).toContain("can-prestige");
+    expect(s.flags).toContain("seen_prestige_ui");
+    expect(s.geneticLifetime).toBeGreaterThanOrEqual(16);
+  });
+
+  it("biomass softcap allows growth past the old 100 hard wall", () => {
+    let s = createColony();
+    s = {
+      ...s,
+      resources: { ...s.resources, biomass: 95, energy: 40, nutrients: 60 },
+    };
+    s = simulate(s, 30);
+    // New hard band is 140 — midgame should not pin exactly at 100
+    expect(s.resources.biomass).toBeGreaterThan(100);
+    expect(s.resources.biomass).toBeLessThanOrEqual(140);
+    expect(s.biomassPeak).toBeGreaterThanOrEqual(s.resources.biomass);
+  });
+
   it("maxStructures gates Silent Reef (no tentacles)", () => {
     let s = createColony();
     s = {

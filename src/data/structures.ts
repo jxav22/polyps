@@ -287,10 +287,10 @@ export const STRUCTURES: StructureDef[] = [
     description:
       "Condenses scarce minerals from current-borne grit. Competes with absorbers for flow — place on vessel edges.",
     tags: ["minerals", "metabolic", "feed"],
-    // balance-verified: metabolic dead end — cheaper + earlier genetic; vessel optional for spine bonus
-    cost: { biomass: 6, energy: 3, waste: 1 },
-    upkeep: { energy: -0.12 },
-    produce: { minerals: 0.14 },
+    // balance-verified: chamber-gated; match filter_plate genetic so gland is a real metabolic fork
+    cost: { biomass: 5, energy: 2, waste: 1 },
+    upkeep: { energy: -0.1 },
+    produce: { minerals: 0.16 },
     adjacencyBonus: {
       requireTags: ["vessel", "transport"],
       modifiers: [
@@ -302,7 +302,7 @@ export const STRUCTURES: StructureDef[] = [
       ],
     },
     envAffinity: { current: 0.9, ambientNutrients: 0.2 },
-    unlock: { requiresStructures: { chamber: 1 }, requiresGenetic: 4 },
+    unlock: { requiresStructures: { chamber: 1 }, requiresGenetic: 3 },
     maxCount: 4,
     visual: { archetype: "chamber", hue: 220, pulse: 0.45 },
   },

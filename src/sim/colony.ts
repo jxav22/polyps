@@ -62,6 +62,10 @@ export interface ColonyState {
   activeSynergies: string[];
   /** soft caps scale with prestige */
   gameSpeed: number;
+  /** Lifetime genetic produced (not current stock — adaptations spend stock) */
+  geneticLifetime: number;
+  /** Peak biomass seen this run (prestige / softcap pressure) */
+  biomassPeak: number;
 }
 
 export function createColony(): ColonyState {
@@ -94,6 +98,8 @@ export function createColony(): ColonyState {
     message: "Absorb. Reach. Digest.",
     activeSynergies: [],
     gameSpeed: 1.45, // accelerate early game toward pack pace anchors
+    geneticLifetime: 0,
+    biomassPeak: START_RESOURCES.biomass,
   };
 }
 
@@ -256,16 +262,31 @@ function buyAdaptation(state: ColonyState, adaptationId: string): ColonyState {
 /** Prestige: Spore Drift — reset colony, keep relics + pathway progress. */
 function sporeDrift(state: ColonyState): ColonyState {
   const need = SPORE_DRIFT.driftCost;
-  if (state.structures.length < 5 || state.resources.biomass < need.minBiomass) {
+  const visible =
+    state.flags.includes("seen_prestige_ui") ||
+    state.flags.includes("prestige_ready") ||
+    state.flags.includes("can-prestige");
+  if (!visible) {
+    return { ...state, message: "Spore Drift is not visible yet." };
+  }
+  if (state.resources.biomass < need.minBiomass) {
     return { ...state, message: "Colony too young to drift." };
   }
-  if (state.resources.genetic < need.minGenetic && state.time < (SPORE_DRIFT.visibleWhen.minTime ?? 720)) {
-    return { ...state, message: "Not enough genetic pressure to spore." };
+  const lifetime = state.geneticLifetime ?? 0;
+  if (lifetime < need.minGeneticLifetime) {
+    return { ...state, message: "Not enough genetic lineage to spore." };
+  }
+  const stockFloor = need.minGeneticStockpile ?? 0;
+  if (stockFloor > 0 && state.resources.genetic < stockFloor) {
+    return { ...state, message: "Need a spark of genetic stock to seed the drift." };
   }
   const frac = SPORE_DRIFT.keep.geneticFraction;
-  const geneticKept = Math.floor(state.resources.genetic * frac) + state.prestige;
+  const geneticKept =
+    Math.floor(lifetime * frac * 0.35 + state.resources.genetic * frac) + state.prestige;
   const next = createColony();
   const earnedRelics = state.adaptations.filter((a) => ADAPTATION_MAP[a]?.permanentRelic);
+  const tier = SPORE_DRIFT.unlockTiers.find((t) => t.prestige === state.prestige + 1);
+  const tierFlags = tier?.unlockFlags ?? [`prestige_${state.prestige + 1}`];
   return {
     ...next,
     prestige: state.prestige + 1,
@@ -277,7 +298,12 @@ function sporeDrift(state: ColonyState): ColonyState {
       biomass: next.resources.biomass + 4 + state.prestige * 2,
       minerals: next.resources.minerals + 1 + state.prestige,
     },
-    flags: ["started", "drifted", ...state.relics.map((r) => `relic:${r}`)],
+    flags: [
+      "started",
+      "drifted",
+      ...tierFlags,
+      ...state.relics.map((r) => `relic:${r}`),
+    ],
     gameSpeed: 1.45 + state.prestige * 0.08,
     message: `Spore Drift #${state.prestige + 1}. Relics endure.`,
     tutorialStep: 3,
