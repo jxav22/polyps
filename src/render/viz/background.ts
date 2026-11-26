@@ -123,6 +123,12 @@ export function drawBackground(
   }
   ctx.restore();
 
+  // Disturbance haze — purple-brown murk when stressed (readable env cue)
+  if (disturbance > 0.08) {
+    ctx.fillStyle = `rgba(60, 30, 70, ${disturbance * 0.16})`;
+    ctx.fillRect(0, 0, w, h);
+  }
+
   // Vignette
   const vig = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.25, w / 2, h / 2, Math.max(w, h) * 0.7);
   vig.addColorStop(0, "rgba(0,0,0,0)");

@@ -57,7 +57,11 @@ hud.onCommand = (cmd) => {
   pushViz();
   if (state.structures.length > before) {
     const newest = state.structures[state.structures.length - 1];
-    if (newest) renderer.flashNode(newest.id, 1.2);
+    if (newest) renderer.flashNode(newest.id, 1.2, "birth");
+  }
+  if (cmd.type === "adapt") {
+    const sel = state.structures.find((s) => s.slot === selectedSlot);
+    if (sel) renderer.flashNode(sel.id, 1.0, "upgrade");
   }
   if (cmd.type === "prestige" && state.prestige > lastPrestige) {
     renderer.flashAt(0, 0, 200, 1.6);
@@ -85,7 +89,7 @@ renderer.onNodeClick((node) => {
     return;
   }
   selectedSlot = node.slot ?? selectedSlot;
-  renderer.flashNode(node.id, 0.45);
+  renderer.flashNode(node.id, 0.7, "select");
 });
 
 window.addEventListener("resize", () => {

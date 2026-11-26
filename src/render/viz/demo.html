@@ -37,7 +37,7 @@
       </div>
       <aside class="polyps-inspect" id="inspect">
         <h2>colony core</h2>
-        <p>Click a structure — pulse flashes mark growth / upgrades.</p>
+        <p>Hover to target · click for select ping · grow for birth bloom.</p>
       </aside>
       <button type="button" class="polyps-grow-hint" id="grow">grow tendril</button>
     </div>
@@ -66,9 +66,15 @@
 
         renderer.onNodeClick(function (node) {
           if (!node) return;
-          renderer.flashNode(node.id, 1.2);
+          // select ping is automatic; add upgrade flash for demo clarity
+          renderer.flashNode(node.id, 1.0, "upgrade");
           const L = labels[node.archetype] || [node.archetype, node.defId];
           inspect.innerHTML = "<h2>" + L[0] + "</h2><p>" + L[1] + "</p>";
+          inspect.style.opacity = "0";
+          requestAnimationFrame(function () {
+            inspect.style.transition = "opacity 220ms ease";
+            inspect.style.opacity = "1";
+          });
         });
 
         document.getElementById("grow").addEventListener("click", function () {
@@ -85,7 +91,8 @@
           snap.nodes.find(function (n) { return n.id === "n0"; }).neighbors.push(id);
           snap.edges.push({ from: "n0", to: id, flow: 0.7 });
           renderer.setSnapshot(snap);
-          setTimeout(function () { renderer.flashNode(id, 1.4); }, 80);
+          // birth flash fires from growth tween; reinforce with upgrade bloom
+          setTimeout(function () { renderer.flashNode(id, 1.3, "birth"); }, 40);
         });
 
         let lastFlash = 0;

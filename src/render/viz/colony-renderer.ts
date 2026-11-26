@@ -278,10 +278,16 @@ export class ColonyRenderer {
 
     ctx.translate(w / 2, h / 2);
 
-    // Subtle colony sway from current
+    // Subtle colony sway from current + disturbance jitter + idle breath
     const sway = Math.sin(t * 0.35) * (2 + current * 4);
-    ctx.rotate(sway * 0.002);
-    ctx.translate(sway * 0.3, Math.cos(t * 0.28) * 1.5);
+    const jitter =
+      disturbance > 0.05
+        ? Math.sin(t * 18) * disturbance * 3.5 + Math.cos(t * 23.5) * disturbance * 2.2
+        : 0;
+    const breath = 1 + Math.sin(t * 0.9) * 0.008;
+    ctx.rotate(sway * 0.002 + jitter * 0.001);
+    ctx.translate(sway * 0.3 + jitter, Math.cos(t * 0.28) * 1.5 + jitter * 0.4);
+    ctx.scale(breath, breath);
 
     // Under-glow pooled at colony centroid
     if (this.laid.length) {
@@ -326,6 +332,9 @@ export class ColonyRenderer {
       ctx,
       time: t,
       selectedId: this.selectedId,
+      current,
+      disturbance,
+      light,
     };
     for (const n of order) {
       const hovering = n.id === this.hoverId && n.id !== this.selectedId;

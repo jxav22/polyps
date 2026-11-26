@@ -19,5 +19,6 @@ export {
   syncEdgeFlows,
   drawParticles,
   drawFlashes,
+  drawFlowBeads,
 } from "./particles.ts";
 export { DEMO_SNAPSHOT, demoLoop } from "./demo-snapshot.ts";

@@ -10,6 +10,11 @@ export interface DrawCtx {
   ctx: CanvasRenderingContext2D;
   time: number;
   selectedId?: string | null;
+  /** 0–1 env current — tentacles lean with flow */
+  current?: number;
+  /** 0–1 disturbance — membranes tense */
+  disturbance?: number;
+  light?: number;
 }
 
 function pulseScale(node: LaidOutNode, time: number): number {
@@ -80,20 +85,23 @@ export function drawConnection(
   const cx = mx + (nx / len) * bend;
   const cy = my + (ny / len) * bend;
 
+  const hue = (a.hue + b.hue) / 2;
+  const pulse = 0.85 + 0.15 * Math.sin(time * 2.4 + a.angle);
+
   ctx.beginPath();
   ctx.moveTo(a.pos.x, a.pos.y);
   ctx.quadraticCurveTo(cx, cy, b.pos.x, b.pos.y);
-  ctx.strokeStyle = membraneColor((a.hue + b.hue) / 2, 0.25 + flow * 0.25);
-  ctx.lineWidth = 2 + flow * 3;
+  ctx.strokeStyle = membraneColor(hue, 0.22 + flow * 0.28);
+  ctx.lineWidth = 2.2 + flow * 3.2;
   ctx.lineCap = "round";
   ctx.stroke();
 
-  // Soft inner lumen
+  // Soft inner lumen — brighter when flow is high
   ctx.beginPath();
   ctx.moveTo(a.pos.x, a.pos.y);
   ctx.quadraticCurveTo(cx, cy, b.pos.x, b.pos.y);
-  ctx.strokeStyle = glowColor((a.hue + b.hue) / 2, 0.12 + flow * 0.2, 70);
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = glowColor(hue, (0.14 + flow * 0.28) * pulse, 72);
+  ctx.lineWidth = 1.1 + flow * 0.8;
   ctx.stroke();
 }
 
@@ -125,7 +133,9 @@ function drawTentacle(d: DrawCtx, node: LaidOutNode): void {
   const { ctx, time } = d;
   const { x, y } = node.pos;
   const len = node.radius * 2.8 * (node.growth ?? 1);
-  const baseAngle = node.angle;
+  const current = d.current ?? 0.3;
+  const lean = current * 0.35;
+  const baseAngle = node.angle + lean * 0.5;
   fillGlow(ctx, x, y, node.radius * 0.7, node.hue, 0.35);
 
   for (let t = 0; t < 3; t++) {
@@ -134,8 +144,9 @@ function drawTentacle(d: DrawCtx, node: LaidOutNode): void {
     const segs = 8;
     for (let i = 1; i <= segs; i++) {
       const u = i / segs;
-      const wave = Math.sin(time * 2.2 + u * 4 + t) * (6 + t * 2) * u;
-      const ang = baseAngle + (t - 1) * 0.35 + wave * 0.04;
+      const wave =
+        Math.sin(time * (2.2 + current) + u * 4 + t) * (6 + t * 2 + current * 4) * u;
+      const ang = baseAngle + (t - 1) * 0.35 + wave * 0.04 + lean * u;
       const px = x + Math.cos(ang) * len * u;
       const py = y + Math.sin(ang) * len * u;
       ctx.lineTo(px, py);
@@ -165,13 +176,23 @@ function drawChamber(d: DrawCtx, node: LaidOutNode): void {
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // Swirling digest contents
+  // Swirling digest contents — speed tied to pulse (metabolic rate feel)
+  const spin = 1.2 + node.pulse * 0.8;
   for (let i = 0; i < 5; i++) {
-    const a = time * 1.5 + i * 1.2;
+    const a = time * spin + i * 1.2;
     const rr = r * (0.25 + (i % 3) * 0.12);
     ctx.beginPath();
-    ctx.arc(x + Math.cos(a) * rr, y + Math.sin(a * 1.3) * rr * 0.7, 2.5, 0, Math.PI * 2);
-    ctx.fillStyle = glowColor(node.hue + 30, 0.55, 70);
+    ctx.arc(x + Math.cos(a) * rr, y + Math.sin(a * 1.3) * rr * 0.7, 2.2 + (i % 2), 0, Math.PI * 2);
+    ctx.fillStyle = glowColor(node.hue + 30, 0.5 + 0.15 * Math.sin(a), 70);
+    ctx.fill();
+  }
+  // Occasional waste mote leaving chamber
+  const wu = (time * 0.4) % 1;
+  if (wu > 0.7) {
+    const fade = (wu - 0.7) / 0.3;
+    ctx.beginPath();
+    ctx.arc(x + r * 0.2, y + r * (0.5 + fade * 0.6), 2, 0, Math.PI * 2);
+    ctx.fillStyle = glowColor(38, 0.45 * (1 - fade), 50);
     ctx.fill();
   }
 }
@@ -179,41 +200,47 @@ function drawChamber(d: DrawCtx, node: LaidOutNode): void {
 function drawSymbiont(d: DrawCtx, node: LaidOutNode): void {
   const { ctx, time } = d;
   const { x, y } = node.pos;
+  const light = d.light ?? 0.55;
+  const photo =
+    (0.35 + light * 0.65) * (0.55 + 0.45 * (0.5 + 0.5 * Math.sin(time * 1.6)));
   const r = node.radius * pulseScale(node, time);
-  fillGlow(ctx, x, y, r * 1.1, node.hue, 0.5 + Math.sin(time * 2) * 0.1);
+  fillGlow(ctx, x, y, r * (1.05 + photo * 0.15), node.hue, 0.45 + photo * 0.25);
   for (let i = 0; i < 6; i++) {
     const a = (i / 6) * Math.PI * 2 + time * 0.4;
     const px = x + Math.cos(a) * r * 0.55;
     const py = y + Math.sin(a) * r * 0.55;
     ctx.beginPath();
-    ctx.arc(px, py, r * 0.28, 0, Math.PI * 2);
-    ctx.fillStyle = glowColor(node.hue, 0.65, 68);
+    ctx.arc(px, py, r * (0.26 + photo * 0.06), 0, Math.PI * 2);
+    ctx.fillStyle = glowColor(node.hue, 0.55 + photo * 0.3, 68);
     ctx.fill();
   }
   ctx.beginPath();
   ctx.arc(x, y, r * 0.35, 0, Math.PI * 2);
-  ctx.fillStyle = glowColor(node.hue + 15, 0.85, 78);
+  ctx.fillStyle = glowColor(node.hue + 15, 0.75 + photo * 0.2, 78);
   ctx.fill();
 }
 
 function drawMembrane(d: DrawCtx, node: LaidOutNode): void {
   const { ctx, time } = d;
   const { x, y } = node.pos;
-  const r = node.radius * (1.15 + Math.sin(time * 1.1) * 0.04);
+  const dist = d.disturbance ?? 0;
+  // Tension: less wobble, brighter edge under disturbance
+  const wobAmp = 0.08 * (1 - dist * 0.7);
+  const r = node.radius * (1.15 + Math.sin(time * 1.1) * 0.04 + dist * 0.06);
   ctx.beginPath();
   for (let i = 0; i <= 40; i++) {
     const t = (i / 40) * Math.PI * 2;
-    const wob = 1 + 0.08 * Math.sin(t * 3 + time);
+    const wob = 1 + wobAmp * Math.sin(t * 3 + time);
     const px = x + Math.cos(t) * r * wob;
     const py = y + Math.sin(t) * r * wob;
     if (i === 0) ctx.moveTo(px, py);
     else ctx.lineTo(px, py);
   }
   ctx.closePath();
-  ctx.strokeStyle = glowColor(node.hue, 0.55, 62);
-  ctx.lineWidth = 3;
+  ctx.strokeStyle = glowColor(node.hue, 0.5 + dist * 0.25, 62);
+  ctx.lineWidth = 3 + dist * 1.5;
   ctx.stroke();
-  ctx.fillStyle = membraneColor(node.hue, 0.18);
+  ctx.fillStyle = membraneColor(node.hue, 0.18 + dist * 0.12);
   ctx.fill();
 }
 
@@ -307,6 +334,7 @@ function drawBacteria(d: DrawCtx, node: LaidOutNode): void {
   const { ctx, time } = d;
   const { x, y } = node.pos;
   const r = node.radius;
+  const buzz = 1.4 + node.pulse * 0.9;
   fillGlow(ctx, x, y, r, node.hue, 0.3);
   ctx.beginPath();
   ctx.arc(x, y, r * 0.9, 0, Math.PI * 2);
@@ -314,7 +342,7 @@ function drawBacteria(d: DrawCtx, node: LaidOutNode): void {
   ctx.lineWidth = 1;
   ctx.stroke();
   for (let i = 0; i < 8; i++) {
-    const a = time * 1.8 + i * 0.9;
+    const a = time * buzz + i * 0.9;
     const orbit = r * (0.25 + (i % 3) * 0.15);
     ctx.beginPath();
     ctx.ellipse(
@@ -326,7 +354,7 @@ function drawBacteria(d: DrawCtx, node: LaidOutNode): void {
       0,
       Math.PI * 2
     );
-    ctx.fillStyle = glowColor(node.hue + i * 5, 0.7, 65);
+    ctx.fillStyle = glowColor(node.hue + i * 5, 0.65 + 0.15 * Math.sin(a * 2), 65);
     ctx.fill();
   }
 }

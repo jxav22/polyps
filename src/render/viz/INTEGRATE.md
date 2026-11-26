@@ -71,7 +71,7 @@ Repo mirror after merge: `public/viz-demo/demo.html`.
 |--------|------|
 | `setSnapshot(VizSnapshot)` | Replace colony graph; new nodes auto growth-tween |
 | `draw(timeSeconds)` | Frame; dt derived internally |
-| `flashNode(id, strength?)` | Upgrade / build bloom + sparks |
+| `flashNode(id, strength?, kind?)` | Feedback bloom; `kind`: `"upgrade"` \| `"select"` \| `"birth"` |
 | `flashAt(x,y,hue?,strength?)` | World-space flash (prestige etc.) |
 | `onNodeClick(handler)` | Selection; presentation only |
 | `resize()` | Call on viewport change |

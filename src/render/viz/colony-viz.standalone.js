@@ -242,7 +242,12 @@
     });
     ctx.restore();
 
-    const vig = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.25, w / 2, h / 2, Math.max(w, h) * 0.7);
+    if (disturbance > 0.08) {
+      ctx.fillStyle = "rgba(60, 30, 70, " + (disturbance * 0.16) + ")";
+      ctx.fillRect(0, 0, w, h);
+    }
+
+        const vig = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.25, w / 2, h / 2, Math.max(w, h) * 0.7);
     vig.addColorStop(0, "rgba(0,0,0,0)");
     vig.addColorStop(1, "rgba(0,2,6,0.72)");
     ctx.fillStyle = vig;
@@ -434,8 +439,8 @@
   }
 
   // ——— particles ———
-  function spawnFlash(at, hue, time, strength) {
-    return { x: at.x, y: at.y, hue: hue, born: time, duration: 0.55 + (strength || 1) * 0.25, strength: strength || 1 };
+  function spawnFlash(at, hue, time, strength, kind) {
+    return { x: at.x, y: at.y, hue: hue, born: time, duration: (kind === "select" ? 0.35 : 0.55 + (strength || 1) * 0.25), strength: strength || 1, kind: kind || "upgrade" };
   }
   function spawnSparks(at, hue, n) {
     const out = [];
@@ -476,17 +481,44 @@
     ctx.save(); ctx.globalCompositeOperation = "lighter";
     flashes.forEach(function (f) {
       const u = (time - f.born) / f.duration;
-      if (u >= 1) return;
+      if (u >= 1 || u < 0) return;
       live.push(f);
-      const r = 20 + u * 70 * f.strength, a = (1 - u) * 0.55 * f.strength;
+      const ease = 1 - Math.pow(1 - Math.min(1, u), 2);
+      const fade = 1 - u;
+      const kind = f.kind || "upgrade";
+      const r = (kind === "select" ? 14 : 22) + ease * (kind === "birth" ? 90 : 75) * f.strength;
+      const a = fade * (kind === "select" ? 0.4 : 0.65) * f.strength;
       const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r);
-      g.addColorStop(0, glowColor(f.hue, a, 85));
-      g.addColorStop(0.4, glowColor(f.hue + 40, a * 0.45, 70));
+      g.addColorStop(0, glowColor(f.hue, a, 90));
+      g.addColorStop(0.35, glowColor(f.hue + 25, a * 0.5, 72));
       g.addColorStop(1, glowColor(f.hue, 0, 50));
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, Math.PI * 2); ctx.fill();
+      const ringR = 8 + ease * (55 + f.strength * 40);
+      ctx.beginPath(); ctx.arc(f.x, f.y, ringR, 0, Math.PI * 2);
+      ctx.strokeStyle = glowColor(f.hue, fade * 0.75 * f.strength, 80);
+      ctx.lineWidth = 2.2 * fade + 0.5; ctx.stroke();
     });
     ctx.restore();
     return live;
+  }
+  function drawFlowBeads(ctx, a, b, time, flow) {
+    const mx = (a.pos.x + b.pos.x) / 2, my = (a.pos.y + b.pos.y) / 2;
+    const nx = -(b.pos.y - a.pos.y), ny = b.pos.x - a.pos.x;
+    const len = Math.hypot(nx, ny) || 1;
+    const bend = Math.sin(time * 0.7 + a.angle) * 12;
+    const cx = mx + (nx / len) * bend, cy = my + (ny / len) * bend;
+    const hue = (a.hue + b.hue) / 2;
+    const n = 2 + Math.floor(flow * 2);
+    ctx.save(); ctx.globalCompositeOperation = "lighter";
+    for (let i = 0; i < n; i++) {
+      const u = (time * (0.35 + flow * 0.45) + i / n) % 1;
+      const omu = 1 - u;
+      const x = omu * omu * a.pos.x + 2 * omu * u * cx + u * u * b.pos.x;
+      const y = omu * omu * a.pos.y + 2 * omu * u * cy + u * u * b.pos.y;
+      ctx.beginPath(); ctx.fillStyle = glowColor(hue, 0.35 + flow * 0.35, 78);
+      ctx.arc(x, y, 1.6 + flow, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
   }
   function syncEdgeFlows(particles, nodes, edges, dt, scale) {
     let list = updateParticles(particles, dt);
@@ -564,11 +596,12 @@
     });
     this.laid = layoutColony(nodes, this.edges, this.opts.worldRadius);
   };
-  ColonyRenderer.prototype.flashNode = function (nodeId, strength) {
+  ColonyRenderer.prototype.flashNode = function (nodeId, strength, kind) {
     const n = this.laid.find(function (x) { return x.id === nodeId; });
     if (!n) return;
-    this.flashes.push(spawnFlash(n.pos, n.hue, this.time, strength || 1));
-    this.particles = this.particles.concat(spawnSparks(n.pos, n.hue, Math.floor(8 + (strength || 1) * 8)));
+    kind = kind || "upgrade";
+    this.flashes.push(spawnFlash(n.pos, n.hue, this.time, strength || 1, kind));
+    if (kind !== "select") this.particles = this.particles.concat(spawnSparks(n.pos, n.hue, Math.floor(10 + (strength || 1) * 10)));
   };
   ColonyRenderer.prototype.flashAt = function (x, y, hue, strength) {
     this.flashes.push(spawnFlash({ x: x, y: y }, hue || 180, this.time, strength || 1));
@@ -608,6 +641,7 @@
       const w = self.screenToWorld(e.clientX, e.clientY);
       const hit = hitTest(self.laid, w);
       self.selectedId = hit ? hit.id : null;
+      if (hit) self.flashNode(hit.id, 0.7, "select");
       if (self.onClick) self.onClick(hit, e);
     });
   };
@@ -652,8 +686,13 @@
     drawBackground(ctx, this.bg, w, h, light, disturbance);
     ctx.translate(w / 2, h / 2);
     const sway = Math.sin(t * 0.35) * (2 + current * 4);
-    ctx.rotate(sway * 0.002);
-    ctx.translate(sway * 0.3, Math.cos(t * 0.28) * 1.5);
+    const jitter = disturbance > 0.05
+      ? Math.sin(t * 18) * disturbance * 3.5 + Math.cos(t * 23.5) * disturbance * 2.2
+      : 0;
+    const breath = 1 + Math.sin(t * 0.9) * 0.008;
+    ctx.rotate(sway * 0.002 + jitter * 0.001);
+    ctx.translate(sway * 0.3 + jitter, Math.cos(t * 0.28) * 1.5 + jitter * 0.4);
+    ctx.scale(breath, breath);
 
     if (this.laid.length) {
       var cx = 0, cy = 0;
@@ -670,7 +709,7 @@
       this.edges.forEach(function (e) {
         const a = self.laid.find(function (n) { return n.id === e.from; });
         const b = self.laid.find(function (n) { return n.id === e.to; });
-        if (a && b) drawConnection(ctx, a, b, t, e.flow || 0.45);
+        if (a && b) { drawConnection(ctx, a, b, t, e.flow || 0.45); drawFlowBeads(ctx, a, b, t, e.flow || 0.45); }
       });
     }
 

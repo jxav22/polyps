@@ -114,6 +114,11 @@
   opacity: 1;
   border-color: var(--polyps-glow-dim);
   outline: none;
+  box-shadow: 0 0 18px rgba(46, 230, 200, 0.18);
+}
+
+.polyps-grow-hint:active {
+  transform: translateX(-50%) scale(0.97);
 }
 
 /* Pulse keyframes for resource ticks */
