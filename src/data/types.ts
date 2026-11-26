@@ -2,7 +2,7 @@
  * Content-pack types extending the shared sim interfaces.
  * Lead owns runtime evaluation; this pack only declares data.
  */
-import type { EnvId, Modifier, ResourceBag, StructureId } from "../sim/interfaces.ts";
+import type { EnvId, Modifier, ResourceBag, StructureId } from "../polyps-interfaces";
 
 export type { EnvId, Modifier, ResourceBag, StructureId };
 

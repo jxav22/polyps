@@ -3,26 +3,26 @@
  * Reads VizSnapshot / SimSnapshot-shaped data; never mutates sim economy.
  *
  * Drop-in:
- *   import { ColonyRenderer } from "./colony-renderer.ts";
+ *   import { ColonyRenderer } from "./colony-renderer";
  *   const r = new ColonyRenderer(canvas);
  *   r.setSnapshot(vizFromSim(snapshot));
  *   function frame(t) { r.draw(t); requestAnimationFrame(frame); }
  */
 
-import { drawArchetype, drawConnection } from "./archetypes.ts";
+import { drawArchetype, drawConnection } from "./archetypes";
 import {
   createBackground,
   drawBackground,
   updateBackground,
   type BackgroundState,
-} from "./background.ts";
+} from "./background";
 import {
   buildEdgesFromNodes,
   hitTest,
   layoutColony,
   lerpLayout,
-} from "./layout.ts";
-import { ARCHETYPE_HUE } from "./palette.ts";
+} from "./layout";
+import { ARCHETYPE_HUE } from "./palette";
 import {
   drawFlashes,
   drawFlowBeads,
@@ -30,7 +30,7 @@ import {
   spawnFlash,
   spawnSparks,
   syncEdgeFlows,
-} from "./particles.ts";
+} from "./particles";
 import type {
   ColonyRendererOptions,
   FlashEvent,
@@ -40,9 +40,9 @@ import type {
   VizEdge,
   VizNode,
   VizSnapshot,
-} from "./types.ts";
+} from "./types";
 
-export type { VizSnapshot, VizNode, VizEdge, ColonyRendererOptions } from "./types.ts";
+export type { VizSnapshot, VizNode, VizEdge, ColonyRendererOptions } from "./types";
 
 /** Map lead SimSnapshot structures → viz nodes (tolerant of missing visual). */
 export function vizNodesFromSim(structures: {

@@ -2,7 +2,7 @@
  * Spore Drift — prestige reset keeping genetic relics / pathway unlocks.
  * Visible ~12–15 min active play (see visibleWhen).
  */
-import type { PrestigeTrackDef, RelicDef } from "./types.ts";
+import type { PrestigeTrackDef, RelicDef } from "./types";
 
 export const RELICS: RelicDef[] = [
   {

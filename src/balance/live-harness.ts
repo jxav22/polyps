@@ -76,10 +76,6 @@ function pickBuild(state: ColonyState, pathway: string): string | null {
 
   const order = AUTOPILOTS[pathway as PathwayKey] ?? AUTOPILOTS.photo;
   const forkIds = FORK[pathway] ?? [];
-  // Prefer pathway fork structures as soon as affordable
-  for (const id of forkIds) {
-    if (can.has(id) && !(counts[id] > 0)) return id;
-  }
   for (const id of order) {
     if (id === "absorber" && (counts.chamber ?? 0) >= 1) continue;
     if (
@@ -98,12 +94,6 @@ function pickBuild(state: ColonyState, pathway: string): string | null {
 }
 
 function pickAdapt(state: ColonyState, pathway: string): string | null {
-  // Hold adaptations until the pathway fork exists — genetic spent early blocked bud/gland
-  const counts = countByDef(state.structures);
-  const forkIds = FORK[pathway] ?? [];
-  if (forkIds.length && !forkIds.some((id) => (counts[id] ?? 0) > 0)) {
-    return null;
-  }
   const can = adaptable(state);
   if (!can.length) return null;
   const ranked = can
@@ -295,7 +285,7 @@ export function formatLiveMarkdown(summary: ReturnType<typeof runLiveHarness>): 
 const duration = Number(process.env.HARNESS_DURATION ?? 900);
 const summary = runLiveHarness(duration);
 const md = formatLiveMarkdown(summary);
-const out = process.env.HARNESS_OUT ?? "/tmp/polyps-live-harness-results.md";
+const out = process.env.HARNESS_OUT ?? "live-harness-results.md";
 writeFileSync(out, md);
 console.log(md);
 console.log(`\nWrote ${out}`);

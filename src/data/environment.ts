@@ -2,7 +2,7 @@
  * Environment cycles & soft events — bias builds, never wipe progress.
  * Env values normalised 0–1 unless noted. Soft floors protect resources/structures.
  */
-import type { EnvCycleDef, EnvEventDef } from "./types.ts";
+import type { EnvCycleDef, EnvEventDef } from "./types";
 
 export const BASELINE_ENV = {
   light: 0.55,

@@ -2,7 +2,7 @@
  * First ~10 minutes — milestone hints, not a tutorial wall.
  * First 60s: absorb → digest → tentacle. Then pathway teases.
  */
-import type { OnboardingHint } from "./types.ts";
+import type { OnboardingHint } from "./types";
 
 export const ONBOARDING_HINTS: OnboardingHint[] = [
   {

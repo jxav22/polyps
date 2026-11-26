@@ -1,24 +1,15 @@
-/**
- * CLI entry expected by older balance scripts / tip builds.
- * Re-exports the live sim harness API under legacy names.
- */
-import {
-  formatLiveMarkdown,
-  runLiveHarness,
-  runLivePathway,
-} from "./live-harness.ts";
+import { writeFileSync } from "node:fs";
+import { formatHarnessMarkdown, runHarness } from "./harness.ts";
 
-export const runHarness = runLiveHarness;
-export const formatHarnessMarkdown = formatLiveMarkdown;
-export { runLiveHarness, formatLiveMarkdown, runLivePathway };
+const duration = Number(process.env.HARNESS_DURATION ?? 900);
+const summary = runHarness(duration);
+const md = formatHarnessMarkdown(summary);
 
-const isMain =
-  typeof process !== "undefined" &&
-  process.argv[1] &&
-  /run-harness\.(ts|js)$/.test(process.argv[1].replace(/\\/g, "/"));
+const outPath = process.env.HARNESS_OUT ?? new URL("../harness-results.md", import.meta.url).pathname;
+writeFileSync(outPath, md, "utf8");
+console.log(md);
+console.log(`\nWrote ${outPath}`);
 
-if (isMain) {
-  const duration = Number(process.env.HARNESS_DURATION ?? 180);
-  const summary = runLiveHarness(duration);
-  console.log(formatLiveMarkdown(summary));
+if (summary.risks.some((r) => r.startsWith("INFINITE LOOP"))) {
+  process.exitCode = 2;
 }
