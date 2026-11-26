@@ -83,11 +83,11 @@ describe("polyps sim", () => {
     expect(grown.resources.biomass).toBeGreaterThanOrEqual(startB);
   });
 
-  it("PRESTIGE_SIGNALS trip on geneticLifetime ≥16, not stockpile", () => {
+  it("PRESTIGE_SIGNALS trip on geneticLifetime ≥16 after ~12 min, not stockpile", () => {
     let s = createColony();
     s = {
       ...s,
-      time: 320,
+      time: 720,
       flags: ["started", "seen_midgame", "pathway_committed"],
       geneticLifetime: 16,
       biomassPeak: 50,
@@ -107,6 +107,31 @@ describe("polyps sim", () => {
     expect(s.flags).toContain("can-prestige");
     expect(s.flags).toContain("seen_prestige_ui");
     expect(s.geneticLifetime).toBeGreaterThanOrEqual(16);
+    expect(s.time).toBeGreaterThanOrEqual(720);
+  });
+
+  it("prestige_ready does not trip before the 12 min pace band", () => {
+    let s = createColony();
+    s = {
+      ...s,
+      time: 400,
+      flags: ["started", "seen_midgame", "pathway_committed"],
+      geneticLifetime: 20,
+      biomassPeak: 60,
+      adaptations: ["grasp_reflex", "tight_cycles"],
+      activeSynergies: ["waste_loop"],
+      resources: {
+        nutrients: 40,
+        energy: 30,
+        biomass: 55,
+        genetic: 2,
+        minerals: 10,
+        waste: 5,
+      },
+    };
+    s = simulate(s, 1);
+    expect(s.flags).not.toContain("prestige_ready");
+    expect(s.flags).not.toContain("seen_prestige_ui");
   });
 
   it("biomass softcap allows growth past the old 100 hard wall", () => {

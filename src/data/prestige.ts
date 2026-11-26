@@ -46,16 +46,18 @@ export const PRESTIGE_SIGNALS: PrestigeSignalDef[] = [
     id: "signal_prestige_ready",
     flag: "prestige_ready",
     description:
-      "Real prestige signal (not stockpile). Lifetime G≥16 or spore vault built or biomass peak.",
+      "Real prestige signal (not stockpile). Pace band ~12–15 min: time≥720 + lifetime G≥16 (or biomass peak).",
     when: {
+      // Keep Drift out of early midgame — PACE.prestigeVisibleSec [720, 900]
+      minTime: 720,
       minGeneticLifetime: 16,
-      minBiomassPeak: 45,
+      minBiomassPeak: 50,
     },
   },
   {
     id: "signal_prestige_ready_vault",
     flag: "prestige_ready",
-    description: "Vault is an explicit prestige commitment.",
+    description: "Vault is an explicit prestige commitment (may open Drift before the time band).",
     when: { minStructures: { spore_vault: 1 } },
   },
   {
@@ -70,7 +72,7 @@ export const PRESTIGE_SIGNALS: PrestigeSignalDef[] = [
     id: "signal_prestige_visible_time",
     flag: "seen_prestige_ui",
     description: "Time fallback so prestige never stays invisible past ~15 min.",
-    when: { minTime: 900, minGeneticLifetime: 10 },
+    when: { minTime: 900, minGeneticLifetime: 12 },
   },
 ];
 
@@ -327,7 +329,7 @@ export const SPORE_DRIFT: PrestigeTrackDef = {
   visibleWhen: {
     minTime: 720,
     minGeneticLifetime: 16,
-    minBiomassPeak: 40,
+    minBiomassPeak: 50,
     anyFlags: ["prestige_ready", "seen_prestige_ui"],
     // do NOT require stockpile genetic — adaptations spend it
   },

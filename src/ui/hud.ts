@@ -126,7 +126,7 @@ export function createHud(mount: HTMLElement): HudApi {
                 ? `<button class="prestige" data-prestige="1">Spore Drift</button>
                    <p class="mute" style="margin:0.35rem 0 0;font-size:0.75rem">Release spores — relics endure.</p>`
                 : snap.flags.includes("pathway_committed")
-                  ? `<p class="mute" style="margin:0;font-size:0.75rem">Lineage deepens — Spore Drift needs lifetime genetic ≥16.</p>`
+                  ? `<p class="mute" style="margin:0;font-size:0.75rem">Lineage deepens — Spore Drift opens ~12 min in (lifetime genetic ≥16).</p>`
                   : snap.flags.includes("seen_midgame")
                     ? `<p class="mute" style="margin:0;font-size:0.75rem">Compose a synergy — Drift waits on lineage, not stockpile.</p>`
                     : ""
