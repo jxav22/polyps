@@ -71,8 +71,10 @@ Repo mirror after merge: `public/viz-demo/demo.html`.
 |--------|------|
 | `setSnapshot(VizSnapshot)` | Replace colony graph; new nodes auto growth-tween |
 | `draw(timeSeconds)` | Frame; dt derived internally |
-| `flashNode(id, strength?, kind?)` | Feedback bloom; `kind`: `"upgrade"` \| `"select"` \| `"birth"` |
+| `flashNode(id, strength?, kind?)` | Feedback bloom; `kind`: `"upgrade"` \| `"select"` \| `"birth"` (spokes on birth) |
 | `flashAt(x,y,hue?,strength?)` | World-space flash (prestige etc.) |
+
+**Flow legend:** cyan orbs = nutrients · lime streaks = energy · amber diamonds = waste. Chevrons on vessels show direction; absorb sparkles on arrival. Growing nodes draw a parent→child **build conduit** until settled.
 | `onNodeClick(handler)` | Selection; presentation only |
 | `resize()` | Call on viewport change |
 | `vizNodesFromSim(structures, defs?)` | Map `SimSnapshot.structures` → `VizNode[]` |

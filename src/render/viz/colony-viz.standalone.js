@@ -501,25 +501,64 @@
     ctx.restore();
     return live;
   }
-  function drawFlowBeads(ctx, a, b, time, flow) {
+  function bezierPoint(a, c, b, u) {
+    const omu = 1 - u;
+    return { x: omu*omu*a.x + 2*omu*u*c.x + u*u*b.x, y: omu*omu*a.y + 2*omu*u*c.y + u*u*b.y };
+  }
+  function edgeControl(a, b, time) {
     const mx = (a.pos.x + b.pos.x) / 2, my = (a.pos.y + b.pos.y) / 2;
     const nx = -(b.pos.y - a.pos.y), ny = b.pos.x - a.pos.x;
     const len = Math.hypot(nx, ny) || 1;
     const bend = Math.sin(time * 0.7 + a.angle) * 12;
-    const cx = mx + (nx / len) * bend, cy = my + (ny / len) * bend;
-    const hue = (a.hue + b.hue) / 2;
-    const n = 2 + Math.floor(flow * 2);
+    return { x: mx + (nx / len) * bend, y: my + (ny / len) * bend };
+  }
+  function drawFlowBeads(ctx, a, b, time, flow) {
+    const c = edgeControl(a, b, time);
+    const wasteLoop = (a.archetype === "chamber" && b.archetype === "bacteria") ||
+      (b.archetype === "chamber" && a.archetype === "bacteria") ||
+      a.archetype === "bacteria" || b.archetype === "bacteria";
+    const photo = a.archetype === "symbiont" || b.archetype === "symbiont";
+    const hue = wasteLoop ? 38 : photo ? 95 : 175;
+    const n = 3 + Math.floor(flow * 3);
     ctx.save(); ctx.globalCompositeOperation = "lighter";
     for (let i = 0; i < n; i++) {
-      const u = (time * (0.35 + flow * 0.45) + i / n) % 1;
-      const omu = 1 - u;
-      const x = omu * omu * a.pos.x + 2 * omu * u * cx + u * u * b.pos.x;
-      const y = omu * omu * a.pos.y + 2 * omu * u * cy + u * u * b.pos.y;
-      ctx.beginPath(); ctx.fillStyle = glowColor(hue, 0.35 + flow * 0.35, 78);
-      ctx.arc(x, y, 1.6 + flow, 0, Math.PI * 2); ctx.fill();
+      const u = (time * (0.4 + flow * 0.5) + i / n) % 1;
+      const pt = bezierPoint(a.pos, c, b.pos, u);
+      const p2 = bezierPoint(a.pos, c, b.pos, Math.min(0.999, u + 0.04));
+      const ang = Math.atan2(p2.y - pt.y, p2.x - pt.x);
+      ctx.beginPath(); ctx.fillStyle = glowColor(hue, 0.45 + flow * 0.4, 80);
+      ctx.arc(pt.x, pt.y, 2.2 + flow * 1.2, 0, Math.PI * 2); ctx.fill();
+      ctx.save(); ctx.translate(pt.x, pt.y); ctx.rotate(ang);
+      ctx.beginPath(); ctx.moveTo(4.5, 0); ctx.lineTo(-1.5, 3); ctx.lineTo(-1.5, -3); ctx.closePath();
+      ctx.fillStyle = glowColor(hue, 0.55 + flow * 0.3, 88); ctx.fill(); ctx.restore();
     }
     ctx.restore();
   }
+  function drawBuildConduit(ctx, parent, child, progress, time) {
+    const p = Math.max(0, Math.min(1, progress));
+    const ease = 1 - Math.pow(1 - p, 2);
+    const c = edgeControl(parent, child, time);
+    const hue = child.hue;
+    ctx.save(); ctx.lineCap = "round"; ctx.globalCompositeOperation = "lighter";
+    ctx.beginPath(); ctx.moveTo(parent.pos.x, parent.pos.y);
+    ctx.quadraticCurveTo(c.x, c.y, child.pos.x, child.pos.y);
+    ctx.strokeStyle = glowColor(hue, 0.12, 70); ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 6]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath();
+    for (let i = 0; i <= 16; i++) {
+      const u = (i / 16) * ease;
+      const pt = bezierPoint(parent.pos, c, child.pos, u);
+      if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
+    }
+    ctx.strokeStyle = glowColor(hue, 0.35 + ease * 0.45, 78);
+    ctx.lineWidth = 2.5 + ease * 2; ctx.stroke();
+    const tip = bezierPoint(parent.pos, c, child.pos, ease);
+    const g = ctx.createRadialGradient(tip.x, tip.y, 0, tip.x, tip.y, 14);
+    g.addColorStop(0, glowColor(hue, 0.7, 90)); g.addColorStop(1, glowColor(hue, 0, 60));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(tip.x, tip.y, 12, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
   function syncEdgeFlows(particles, nodes, edges, dt, scale) {
     let list = updateParticles(particles, dt);
     const byId = new Map(nodes.map(function (n) { return [n.id, n]; }));
@@ -709,9 +748,30 @@
       this.edges.forEach(function (e) {
         const a = self.laid.find(function (n) { return n.id === e.from; });
         const b = self.laid.find(function (n) { return n.id === e.to; });
-        if (a && b) { drawConnection(ctx, a, b, t, e.flow || 0.45); drawFlowBeads(ctx, a, b, t, e.flow || 0.45); }
+        if (a && b) {
+          var aG = a.growth == null ? 1 : a.growth, bG = b.growth == null ? 1 : b.growth;
+          if (aG > 0.55 && bG > 0.55) {
+            drawConnection(ctx, a, b, t, e.flow || 0.45);
+            drawFlowBeads(ctx, a, b, t, e.flow || 0.45);
+          }
+        }
       });
     }
+
+    (function () {
+      var self = this;
+      self.laid.forEach(function (child) {
+        var g = child.growth == null ? 1 : child.growth;
+        if (g >= 0.98) return;
+        var parent = null;
+        (child.neighbors || []).forEach(function (nid) {
+          var n = self.laid.find(function (x) { return x.id === nid; });
+          if (n && (n.growth == null ? 1 : n.growth) > 0.9) parent = n;
+        });
+        if (!parent) parent = self.laid.find(function (n) { return n.archetype === "core" && n.id !== child.id; });
+        if (parent) drawBuildConduit(ctx, parent, child, g, t);
+      });
+    }).call(this);
 
     const order = this.laid.slice().sort(function (a, b) {
       if (a.archetype === "core") return 1;

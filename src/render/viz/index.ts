@@ -20,5 +20,7 @@ export {
   drawParticles,
   drawFlashes,
   drawFlowBeads,
+  drawBuildConduit,
+  spawnAbsorb,
 } from "./particles";
 export { DEMO_SNAPSHOT, demoLoop } from "./demo-snapshot";

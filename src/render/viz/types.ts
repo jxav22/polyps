@@ -80,7 +80,10 @@ export interface Particle {
   maxLife: number;
   hue: number;
   size: number;
-  kind: "nutrient" | "mote" | "spark" | "waste" | "trail";
+  kind: "nutrient" | "mote" | "spark" | "waste" | "trail" | "energy";
+  /** destination for arrival absorb cue */
+  tx?: number;
+  ty?: number;
 }
 
 export interface ColonyRendererOptions {

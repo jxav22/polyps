@@ -24,6 +24,7 @@ import {
 } from "./layout";
 import { ARCHETYPE_HUE } from "./palette";
 import {
+  drawBuildConduit,
   drawFlashes,
   drawFlowBeads,
   drawParticles,
@@ -215,8 +216,16 @@ export class ColonyRenderer {
     for (const [id, g] of [...this.growing.entries()]) {
       if (g < 0.15 && !this.birthFlashed.has(id)) {
         this.birthFlashed.add(id);
-        // Defer flash until laid has the node
-        queueMicrotask(() => this.flashNode(id, 1.1, "birth"));
+        queueMicrotask(() => {
+          this.flashNode(id, 1.25, "birth");
+          // Pulse parent so build origin is obvious
+          const child = this.laid.find((n) => n.id === id);
+          const parentId = child?.neighbors.find((nid) => {
+            const n = this.laid.find((x) => x.id === nid);
+            return n && (n.growth ?? 1) > 0.9;
+          });
+          if (parentId) this.flashNode(parentId, 0.55, "select");
+        });
       }
       const next = Math.min(1, g + dt * 1.6);
       if (next >= 1) {
@@ -309,16 +318,41 @@ export class ColonyRenderer {
       ctx.fill();
     }
 
+    const byId = new Map(this.laid.map((n) => [n.id, n]));
     if (this.opts.showVessels) {
-      const byId = new Map(this.laid.map((n) => [n.id, n]));
       for (const e of this.edges) {
         const a = byId.get(e.from);
         const b = byId.get(e.to);
         if (a && b) {
-          drawConnection(ctx, a, b, t, e.flow ?? 0.45);
-          drawFlowBeads(ctx, a, b, t, e.flow ?? 0.45);
+          // Hide full vessel until child mostly grown — conduit draws the build path
+          const aG = a.growth ?? 1;
+          const bG = b.growth ?? 1;
+          if (aG > 0.55 && bG > 0.55) {
+            drawConnection(ctx, a, b, t, e.flow ?? 0.45);
+            drawFlowBeads(ctx, a, b, t, e.flow ?? 0.45);
+          }
         }
       }
+    }
+
+    // Build conduits: parent → growing child (readable build feedback)
+    for (const child of this.laid) {
+      const g = child.growth ?? 1;
+      if (g >= 0.98) continue;
+      let parent: LaidOutNode | undefined;
+      for (const nid of child.neighbors) {
+        const n = byId.get(nid);
+        if (n && (n.growth ?? 1) > 0.9) {
+          parent = n;
+          break;
+        }
+      }
+      if (!parent) {
+        parent = this.laid.find(
+          (n) => n.archetype === "core" && n.id !== child.id
+        );
+      }
+      if (parent) drawBuildConduit(ctx, parent, child, g, t);
     }
 
     // Draw small → large so core sits on top-ish; core last
