@@ -2,8 +2,8 @@
  * Sample colony + tiny loop helpers for wiring / smoke demos.
  */
 
-import { ColonyRenderer } from "./colony-renderer.ts";
-import type { VizSnapshot } from "./types.ts";
+import { ColonyRenderer } from "./colony-renderer";
+import type { VizSnapshot } from "./types";
 
 /** Representative v1 colony covering every archetype. */
 export const DEMO_SNAPSHOT: VizSnapshot = {

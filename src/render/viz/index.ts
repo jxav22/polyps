@@ -7,12 +7,12 @@
 export {
   ColonyRenderer,
   vizNodesFromSim,
-} from "./colony-renderer.ts";
-export type { ColonyRendererOptions, VizSnapshot, VizNode, VizEdge, NodeClickHandler, LaidOutNode } from "./types.ts";
-export { layoutColony, hitTest, buildEdgesFromNodes, lerpLayout } from "./layout.ts";
-export { ARCHETYPE_HUE, DEPTH, GLOW, glowColor, hsla } from "./palette.ts";
-export { createBackground, drawBackground, updateBackground } from "./background.ts";
-export { drawArchetype, drawConnection } from "./archetypes.ts";
+} from "./colony-renderer";
+export type { ColonyRendererOptions, VizSnapshot, VizNode, VizEdge, NodeClickHandler, LaidOutNode } from "./types";
+export { layoutColony, hitTest, buildEdgesFromNodes, lerpLayout } from "./layout";
+export { ARCHETYPE_HUE, DEPTH, GLOW, glowColor, hsla } from "./palette";
+export { createBackground, drawBackground, updateBackground } from "./background";
+export { drawArchetype, drawConnection } from "./archetypes";
 export {
   spawnFlash,
   spawnSparks,
@@ -20,5 +20,5 @@ export {
   drawParticles,
   drawFlashes,
   drawFlowBeads,
-} from "./particles.ts";
-export { DEMO_SNAPSHOT, demoLoop } from "./demo-snapshot.ts";
+} from "./particles";
+export { DEMO_SNAPSHOT, demoLoop } from "./demo-snapshot";

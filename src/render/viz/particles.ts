@@ -3,8 +3,8 @@
  * Tuned for readable motion: trails, shockwave rings, clear sparks.
  */
 
-import { glowColor } from "./palette.ts";
-import type { FlashEvent, LaidOutNode, Particle, Vec2, VizEdge } from "./types.ts";
+import { glowColor } from "./palette";
+import type { FlashEvent, LaidOutNode, Particle, Vec2, VizEdge } from "./types";
 
 export function createFlowParticles(
   from: LaidOutNode,

@@ -3,8 +3,8 @@
  * Each reads growth + pulse so morphing / heartbeat feel alive.
  */
 
-import { glowColor, membraneColor } from "./palette.ts";
-import type { LaidOutNode } from "./types.ts";
+import { glowColor, membraneColor } from "./palette";
+import type { LaidOutNode } from "./types";
 
 export interface DrawCtx {
   ctx: CanvasRenderingContext2D;

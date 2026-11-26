@@ -3,7 +3,7 @@
  * Not a grid; positions feel like a living colony silhouette.
  */
 
-import type { LaidOutNode, Vec2, VizEdge, VizNode } from "./types.ts";
+import type { LaidOutNode, Vec2, VizEdge, VizNode } from "./types";
 
 /** Softly blend toward a new layout so growth doesn't teleport. */
 export function lerpLayout(

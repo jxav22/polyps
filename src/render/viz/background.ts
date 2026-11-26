@@ -2,8 +2,8 @@
  * Atmospheric deep-water backdrop: depth gradient, soft caustics, plankton motes.
  */
 
-import { DEPTH, causticColor } from "./palette.ts";
-import type { Particle } from "./types.ts";
+import { DEPTH, causticColor } from "./palette";
+import type { Particle } from "./types";
 
 export interface BackgroundState {
   motes: Particle[];
