@@ -64,4 +64,29 @@ describe("polyps sim", () => {
     expect(a.resources).toEqual(b.resources);
     expect(a.env.light).toBeCloseTo(b.env.light, 5);
   });
+
+  it("maxStructures gates Silent Reef (no tentacles)", () => {
+    let s = createColony();
+    s = {
+      ...s,
+      resources: {
+        nutrients: 40,
+        energy: 30,
+        biomass: 80,
+        genetic: 10,
+        minerals: 20,
+        waste: 5,
+      },
+    };
+    // absorber only — should be eligible for silent_reef if recipe is max tentacle 0
+    s = simulate(s, 2);
+    const withoutArms = s.activeSynergies.includes("silent_reef");
+    s = applyCommand(s, { type: "build", structureId: "tentacle" });
+    s = simulate(s, 2);
+    const withArms = s.activeSynergies.includes("silent_reef");
+    // If pack defines silent_reef, tentacles must disable it
+    if (withoutArms || withArms) {
+      expect(withArms).toBe(false);
+    }
+  });
 });

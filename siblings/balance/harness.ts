@@ -64,42 +64,37 @@ export interface HarnessSummary {
 
 const PATHWAY_BUILD_PRIORITY: Record<PathwayKey, StructureId[]> = {
   predatory: [
-    "absorber",
-    "tentacle",
-    "chamber",
     "sensor",
     "venom",
-    "vessel",
+    "tentacle",
     "membrane",
+    "vessel",
     "mineral_gland",
+    "chamber",
   ],
   photo: [
-    "absorber",
-    "tentacle",
-    "chamber",
     "symbiont",
     "membrane",
-    "vessel",
     "bud",
+    "vessel",
+    "chamber",
+    "tentacle",
   ],
   symbiotic: [
-    "absorber",
-    "tentacle",
-    "chamber",
     "bacteria",
     "waste_symbiont",
     "symbiont",
-    "vessel",
     "membrane",
+    "vessel",
+    "chamber",
   ],
   colonial: [
-    "absorber",
-    "tentacle",
-    "chamber",
     "symbiont",
     "membrane",
     "bud",
     "vessel",
+    "chamber",
+    "tentacle",
   ],
 };
 
@@ -131,13 +126,57 @@ function pickBuild(
 ): StructureId | null {
   const buildable = listBuildable(state);
   if (buildable.length === 0) return null;
+  const counts = countStructures(state);
+
+  // Force unlock spine before pathway spam: tentacle → chamber before extras
+  if ((counts.tentacle ?? 0) < 1) {
+    const t = buildable.find((b) => b.id === "tentacle");
+    if (t) return t.id;
+  }
+  if ((counts.chamber ?? 0) < 1) {
+    const c = buildable.find((b) => b.id === "chamber");
+    if (c) return c.id;
+  }
+
   const priority = PATHWAY_BUILD_PRIORITY[pathway];
+  const midgame = (counts.chamber ?? 0) >= 1;
+  const forkId =
+    pathway === "predatory"
+      ? "venom"
+      : pathway === "photo"
+        ? "symbiont"
+        : pathway === "symbiotic"
+          ? "bacteria"
+          : "bud";
   for (const id of priority) {
+    // After chamber, chase pathway structures — not more absorbers/tentacles
+    if (midgame && (id === "absorber" || id === "tentacle")) {
+      const advanced = buildable.find(
+        (b) => b.id !== "absorber" && b.id !== "tentacle",
+      );
+      if (advanced) continue;
+    }
+    // Don't stack chambers until the pathway fork structure exists
+    if (id === "chamber" && midgame && !counts[forkId]) {
+      const forkBuild = buildable.find((b) => b.id === forkId);
+      if (forkBuild) continue;
+      const other = buildable.find(
+        (b) =>
+          b.id !== "chamber" &&
+          b.id !== "absorber" &&
+          b.id !== "tentacle",
+      );
+      if (other) continue;
+    }
     const hit = buildable.find((b) => b.id === id);
     if (hit) return hit.id;
   }
-  // Prefer anything that advances unlock graph
-  return buildable[0]?.id ?? null;
+  // Prefer leftovers that are on this pathway's list (avoid cross-path spam e.g. bacteria)
+  const allowed = new Set(priority);
+  const advanced = buildable.find(
+    (b) => b.id !== "absorber" && allowed.has(b.id),
+  );
+  return advanced?.id ?? null;
 }
 
 function pickAdapt(state: SimState, pathway: PathwayKey): string | null {
@@ -252,18 +291,6 @@ export function runPathway(
       if (!seenAdaptations.has(a)) {
         seenAdaptations.add(a);
         unlocks.push({ id: a, kind: "adaptation", time: state.time });
-        const def = ADAPTATIONS.find((x) => x.id === a);
-        if (
-          timeToPathwayFork === null &&
-          def &&
-          (def.pathway === pathway ||
-            (pathway === "photo" && def.pathway === "photo") ||
-            (pathway === "predatory" && def.pathway === "predatory") ||
-            (pathway === "symbiotic" && def.pathway === "symbiotic") ||
-            (pathway === "colonial" && def.pathway === "colonial"))
-        ) {
-          timeToPathwayFork = state.time;
-        }
       }
     }
     for (const f of state.flags) {
@@ -276,29 +303,38 @@ export function runPathway(
       }
     }
 
-    // Pathway fork also when pathway-defining structure appears
-    const forkStructs: Record<PathwayKey, string> = {
-      predatory: "venom",
-      photo: "symbiont",
-      symbiotic: "bacteria",
-      colonial: "bud",
+    // Pathway fork when a pathway-defining structure appears
+    const forkStructs: Record<PathwayKey, string[]> = {
+      predatory: ["venom", "sensor"],
+      photo: ["symbiont"],
+      symbiotic: ["bacteria", "waste_symbiont"],
+      colonial: ["bud"],
     };
-    if (
-      timeToPathwayFork === null &&
-      seenStructures.has(forkStructs[pathway])
-    ) {
-      timeToPathwayFork = state.time;
+    if (timeToPathwayFork === null) {
+      for (const id of forkStructs[pathway]) {
+        if (seenStructures.has(id)) {
+          timeToPathwayFork = state.time;
+          break;
+        }
+      }
     }
 
     if (decisionAcc >= decisionInterval) {
       decisionAcc = 0;
-      // Adapt first if possible (spend genetic), else build
-      const adaptId = pickAdapt(state, pathway);
-      if (adaptId) {
-        applyCommand(state, { type: "adapt", adaptationId: adaptId });
-      } else {
-        const buildId = pickBuild(state, pathway);
+      const counts = countStructures(state);
+      const spineReady = (counts.tentacle ?? 0) >= 1 && (counts.chamber ?? 0) >= 1;
+      // Build unlock spine first; never adapt while blocked on chamber
+      const buildId = pickBuild(state, pathway);
+      if (!spineReady) {
         if (buildId) {
+          applyCommand(state, { type: "build", structureId: buildId });
+        }
+        // else wait for resources — do not spend genetic yet
+      } else {
+        const adaptId = pickAdapt(state, pathway);
+        if (adaptId) {
+          applyCommand(state, { type: "adapt", adaptationId: adaptId });
+        } else if (buildId) {
           applyCommand(state, { type: "build", structureId: buildId });
         }
       }

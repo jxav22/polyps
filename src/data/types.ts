@@ -14,7 +14,10 @@ export interface SynergyDef {
   recipe: {
     requireTags?: string[];
     minStructures?: Partial<Record<string, number>>;
+    /** Identity caps — sim must honor maxStructures (min:0 does NOT mean "none") */
+    maxStructures?: Partial<Record<string, number>>;
     adjacentTags?: string[];
+    forbidAdjacentTags?: string[];
     env?: Partial<Record<EnvId, { min?: number; max?: number }>>;
   };
   modifiers: Modifier[];

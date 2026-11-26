@@ -8,8 +8,12 @@ export interface Modifier {
   tags?: string[];
   when?: {
     minStructures?: Partial<Record<string, number>>;
+    /** count must be <= n (identity builds e.g. no tentacles) */
+    maxStructures?: Partial<Record<string, number>>;
     env?: Partial<Record<EnvId, { min?: number; max?: number }>>;
     adjacentTags?: string[];
+    /** if set, ALL listed tags must be absent from adjacentTags */
+    forbidAdjacentTags?: string[];
   };
 }
 
@@ -28,6 +32,11 @@ export function modifierApplies(mod: Modifier, ctx: ModifierContext): boolean {
       if ((ctx.structureCounts[id] ?? 0) < (n ?? 0)) return false;
     }
   }
+  if (w.maxStructures) {
+    for (const [id, n] of Object.entries(w.maxStructures)) {
+      if ((ctx.structureCounts[id] ?? 0) > (n ?? 0)) return false;
+    }
+  }
   if (w.env) {
     for (const [k, range] of Object.entries(w.env)) {
       const v = ctx.env[k as EnvId] ?? 0;
@@ -38,6 +47,11 @@ export function modifierApplies(mod: Modifier, ctx: ModifierContext): boolean {
   if (w.adjacentTags?.length) {
     for (const t of w.adjacentTags) {
       if (!ctx.adjacentTags.includes(t)) return false;
+    }
+  }
+  if (w.forbidAdjacentTags?.length) {
+    for (const t of w.forbidAdjacentTags) {
+      if (ctx.adjacentTags.includes(t)) return false;
     }
   }
   return true;

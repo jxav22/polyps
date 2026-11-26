@@ -12,7 +12,7 @@ export const ADAPTATIONS: AdaptationDef[] = [
     description:
       "Tentacles snatch faster in current. Burns more energy when idle — restless hunters pay rent.",
     pathway: "predatory",
-    costGenetic: 4,
+    costGenetic: 3,
     modifiers: [
       {
         id: "grasp-feed",
@@ -76,7 +76,7 @@ export const ADAPTATIONS: AdaptationDef[] = [
       },
       {
         id: "chloro-night",
-        mult: { "tag.photo.produce.energy": 0.55 },
+        mult: { "tag.photo.produce.energy": 0.65 },
         tags: ["pathway:photo"],
         when: { env: { light: { max: 0.35 } } },
       },
@@ -586,7 +586,7 @@ export const ADAPTATIONS: AdaptationDef[] = [
         id: "still-covenant-keep",
         mult: { "synergy:silent-reef": 1.35, "tag.filter.produce.nutrients": 1.2 },
         tags: ["pathway:metabolic", "synergy:silent-reef"],
-        when: { minStructures: { tentacle: 0 } },
+        when: { maxStructures: { tentacle: 0, venom: 0 } },
       },
       {
         id: "still-covenant-break",

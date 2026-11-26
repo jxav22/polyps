@@ -31,7 +31,7 @@ export const START_RESOURCES = {
   energy: 3,
   biomass: 2,
   genetic: 0,
-  minerals: 0,
+  minerals: 3, // balance: membrane/symbiont mineral tax at fork
   waste: 0,
 } as const;
 
@@ -108,4 +108,34 @@ export const HARNESS_FLAGS = {
   photoNeverNights: "If shade_debt + always-light test wins all envs, retune night mults.",
   vesselTaxTooHarsh: "If solo vessel always negative EV vs no vessel, soften upkeep.",
   prestigeInvisible: "If genetic < 15 at 15 min under all autopilots, buff novelty/genetic ticks.",
+  silentReefBroken:
+    "If silent_reef fires with tentacles present, maxStructures not wired in modifierApplies.",
+} as const;
+
+/** Hard caps lead should enforce when folding synergy mults */
+export const HARD_CAPS = {
+  /** stacked waste-loop convert.rate mult */
+  wasteLoopConvertRateMult: 2.0,
+  /** stacked photo energy mult from synergies alone */
+  photoEnergySynergyMult: 2.2,
+  /** membranes before overveil anti-synergy */
+  membraneOverveilAt: 4,
+} as const;
+
+/**
+ * Sim contract notes (from origin/main review):
+ * - modifierApplies today only checks minStructures / env / adjacentTags
+ * - Content now uses maxStructures + forbidAdjacentTags — lead must extend sim
+ * - minStructures: { x: 0 } NEVER means "zero of x"; use maxStructures: { x: 0 }
+ */
+export const SIM_CONTRACT = {
+  needsMaxStructures: true,
+  needsForbidAdjacentTags: true,
+  needsRivalryTable: true,
+  channelPrefixExamples: [
+    "produce.nutrients",
+    "tag.photo.produce.energy",
+    "synergy:waste-loop",
+    "convert.rate",
+  ],
 } as const;

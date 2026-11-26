@@ -33,7 +33,7 @@ export const STRUCTURES: StructureDef[] = [
       "Active feeding arm. Pulls nutrients hard but burns energy — idle tentacles starve the colony.",
     tags: ["feed", "predation", "limb"],
     cost: { biomass: 4, energy: 2 },
-    upkeep: { energy: -0.25 },
+    upkeep: { energy: -0.15 },
     produce: { nutrients: 0.9 },
     adjacencyBonus: {
       requireTags: ["sensor"],
@@ -56,13 +56,13 @@ export const STRUCTURES: StructureDef[] = [
     description:
       "Converts nutrients into energy and waste. Without a waste sink, toxicity throttles everything.",
     tags: ["digest", "metabolic", "core"],
-    cost: { biomass: 8, energy: 4, nutrients: 6 },
+    cost: { biomass: 6, energy: 3, nutrients: 4 },
     upkeep: { energy: -0.1 },
     convert: [
       { from: "nutrients", to: "energy", rate: 0.8, efficiency: 0.7 },
       // waste is emitted as byproduct of digestion (sim applies waste = rate * (1-efficiency) or separate)
     ],
-    produce: { waste: 0.25 },
+    produce: { waste: 0.18 },
     adjacencyBonus: {
       requireTags: ["bacteria", "waste"],
       modifiers: [
@@ -128,7 +128,7 @@ export const STRUCTURES: StructureDef[] = [
     description:
       "Biomass sink that softens predator pressure and disturbance. Blocks some nutrient current if overbuilt.",
     tags: ["defense", "membrane", "shell"],
-    cost: { biomass: 10, minerals: 2, energy: 3 },
+    cost: { biomass: 8, minerals: 2, energy: 3 },
     upkeep: { energy: -0.08, biomass: -0.02 },
     produce: {},
     adjacencyBonus: {
@@ -170,7 +170,7 @@ export const STRUCTURES: StructureDef[] = [
       ],
     },
     envAffinity: { current: 0.8, predatorPressure: 0.5 },
-    unlock: { requiresStructures: { tentacle: 2 }, requiresGenetic: 4 },
+    unlock: { requiresStructures: { tentacle: 2 }, requiresGenetic: 3 },
     maxCount: 6,
     visual: { archetype: "sensor", hue: 280, pulse: 1.1 },
   },
@@ -180,9 +180,9 @@ export const STRUCTURES: StructureDef[] = [
     description:
       "Mineral-hungry predation spike. Huge nutrient bursts under pressure; dumps waste and risks overheat.",
     tags: ["predation", "venom", "burst"],
-    cost: { biomass: 7, minerals: 4, energy: 4 },
+    cost: { biomass: 7, minerals: 3, energy: 4 },
     upkeep: { minerals: -0.04, energy: -0.15 },
-    produce: { nutrients: 0.3, waste: 0.2 },
+    produce: { nutrients: 0.5, waste: 0.2 },
     adjacencyBonus: {
       requireTags: ["sensor"],
       modifiers: [
@@ -222,7 +222,7 @@ export const STRUCTURES: StructureDef[] = [
       ],
     },
     envAffinity: { current: 0.4 },
-    unlock: { requiresStructures: { chamber: 2 }, requiresGenetic: 5 },
+    unlock: { requiresStructures: { chamber: 1 }, requiresGenetic: 5 },
     maxCount: 14,
     visual: { archetype: "vessel", hue: 195, pulse: 0.6 },
   },
@@ -232,7 +232,7 @@ export const STRUCTURES: StructureDef[] = [
     description:
       "Spends biomass and genetic to spawn a daughter site that inherits chamber/symbiont traits. Crowding without vessels collapses yields.",
     tags: ["bud", "colonial", "reproduce"],
-    cost: { biomass: 15, genetic: 3, energy: 6 },
+    cost: { biomass: 12, genetic: 2, energy: 6 },
     upkeep: { nutrients: -0.15, energy: -0.1 },
     produce: { genetic: 0.04 },
     adjacencyBonus: {
@@ -247,7 +247,7 @@ export const STRUCTURES: StructureDef[] = [
       ],
     },
     envAffinity: { light: 0.4, ambientNutrients: 0.3 },
-    unlock: { requiresStructures: { chamber: 1, membrane: 1 }, requiresGenetic: 8 },
+    unlock: { requiresStructures: { chamber: 1, membrane: 1 }, requiresGenetic: 6 },
     maxCount: 5,
     visual: { archetype: "bud", hue: 310, pulse: 0.9 },
   },
@@ -261,7 +261,7 @@ export const STRUCTURES: StructureDef[] = [
     tags: ["bacteria", "waste", "metabolic", "digest"],
     cost: { biomass: 3, energy: 2, nutrients: 4 },
     upkeep: { energy: -0.05 },
-    convert: [{ from: "waste", to: "energy", rate: 0.3, efficiency: 0.6 }],
+    convert: [{ from: "waste", to: "energy", rate: 0.4, efficiency: 0.6 }],
     produce: { minerals: 0.03 },
     adjacencyBonus: {
       requireTags: ["digest"],

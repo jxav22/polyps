@@ -1,5 +1,5 @@
 import { ADAPTATION_MAP } from "../data/adaptations.ts";
-import { GLOBAL_RATE, SOFT_CAPS } from "../data/balance.ts";
+import { GLOBAL_RATE, HARD_CAPS, SOFT_CAPS } from "../data/balance.ts";
 import { STRUCTURE_MAP } from "../data/structures.ts";
 import {
   SYNERGIES,
@@ -95,6 +95,21 @@ function tickOnce(state: ColonyState, dt: number): ColonyState {
         if (!adjacentTagSet.has(t)) return false;
       }
     }
+    // Identity / exclusion recipes (Silent Reef etc.)
+    const recipeAny = recipe as {
+      maxStructures?: Partial<Record<string, number>>;
+      forbidAdjacentTags?: string[];
+    };
+    if (recipeAny.maxStructures) {
+      for (const [id, n] of Object.entries(recipeAny.maxStructures)) {
+        if ((counts[id] ?? 0) > (n ?? 0)) return false;
+      }
+    }
+    if (recipeAny.forbidAdjacentTags?.length) {
+      for (const t of recipeAny.forbidAdjacentTags) {
+        if (adjacentTagSet.has(t)) return false;
+      }
+    }
     // Recipe satisfied ⇒ active; modifier.when is applied when folding channels
     return true;
   }).map((s) => s.id);
@@ -110,6 +125,20 @@ function tickOnce(state: ColonyState, dt: number): ColonyState {
     "produce.minerals",
     "produce.waste",
   ]);
+
+  // Hard caps from content balance contract
+  if (channelMods["convert"] !== undefined) {
+    channelMods["convert"] = Math.min(
+      channelMods["convert"],
+      HARD_CAPS.wasteLoopConvertRateMult,
+    );
+  }
+  if (channelMods["produce.energy"] !== undefined) {
+    channelMods["produce.energy"] = Math.min(
+      channelMods["produce.energy"],
+      HARD_CAPS.photoEnergySynergyMult,
+    );
+  }
 
   // Rivalries: both synergies active → soft identity tax on produce
   let rivalryMult = 1;

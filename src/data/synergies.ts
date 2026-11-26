@@ -597,6 +597,7 @@ export const SYNERGIES: SynergyDef[] = [
       "No tentacles: membrane + filter plates + absorbers. Quiet current grazing. Sensor Hunt and Bait Hunt refuse to light — you traded teeth for stillness.",
     recipe: {
       minStructures: { membrane: 1, filter_plate: 1, absorber: 2 },
+      maxStructures: { tentacle: 0, venom: 0 },
     },
     modifiers: [
       {
@@ -611,7 +612,8 @@ export const SYNERGIES: SynergyDef[] = [
         },
         tags: ["synergy:silent-reef", "synergy:filter-rim", "synergy:photo-shield"],
         when: {
-          minStructures: { membrane: 1, filter_plate: 1, absorber: 2, tentacle: 0 },
+          minStructures: { membrane: 1, filter_plate: 1, absorber: 2 },
+          maxStructures: { tentacle: 0, venom: 0 },
         },
       },
     ],
@@ -814,6 +816,63 @@ export const SYNERGIES: SynergyDef[] = [
     ],
     discoveryHint: "Ship the mess to the rim — keep guests clean in the core.",
   },
+  {
+    id: "clean_core",
+    name: "Clean Core",
+    description:
+      "Chamber with zero waste structures adjacent — convert efficiency up, but Detritus Rain and Red Tide punish the purity.",
+    recipe: {
+      minStructures: { chamber: 1 },
+      maxStructures: { bacteria: 0, waste_symbiont: 0 },
+      forbidAdjacentTags: ["waste"],
+    },
+    modifiers: [
+      {
+        id: "clean-core-pure",
+        mult: {
+          "tag.digest.convert.efficiency": 1.25,
+          "synergy:waste-loop": 0.5,
+          "synergy:red-tide": 0.6,
+          "resource.waste.penalty": 1.35,
+        },
+        tags: ["synergy:clean-core"],
+        when: {
+          minStructures: { chamber: 1 },
+          maxStructures: { bacteria: 0, waste_symbiont: 0 },
+          forbidAdjacentTags: ["waste"],
+        },
+      },
+    ],
+    discoveryHint: "Keep the gut sterile — sharp digestion until the mess arrives.",
+  },
+  {
+    id: "pressure_bloom",
+    name: "Pressure Bloom",
+    description:
+      "Odd couple: colonial bloom under predator pressure with membranes. Daughters inherit defense bias; genetic from novelty dips.",
+    recipe: {
+      minStructures: { bud: 1, membrane: 1, symbiont: 1 },
+      env: { predatorPressure: { min: 0.4 }, light: { min: 0.4 } },
+    },
+    modifiers: [
+      {
+        id: "pressure-bloom-core",
+        mult: {
+          "synergy:colonial-bloom": 1.15,
+          "synergy:photo-shield": 1.15,
+          "tag.bud.inherit.membrane": 1,
+          "synergy:novelty-engine": 0.8,
+          "tag.defense": 1.2,
+        },
+        tags: ["synergy:pressure-bloom", "synergy:colonial-bloom", "synergy:brood-nest"],
+        when: {
+          minStructures: { bud: 1, membrane: 1 },
+          env: { predatorPressure: { min: 0.4 } },
+        },
+      },
+    ],
+    discoveryHint: "Bloom behind the veil while the water has teeth.",
+  },
 ];
 
 export const SYNERGIES_BY_ID: Record<string, SynergyDef> = Object.fromEntries(
@@ -854,6 +913,8 @@ export const EXTRA_SYNERGY_IDS = [
   "lean_armor",
   "overveil",
   "fringe_ferment",
+  "clean_core",
+  "pressure_bloom",
 ] as const;
 
 /** Pairs that weaken each other when both active — lead applies rivalry mult */
@@ -905,6 +966,18 @@ export const SYNERGY_RIVALRIES: Array<{ a: string; b: string; rivalryMult: numbe
     b: "dual_symbiont",
     rivalryMult: 0.9,
     note: "Mild — dual guests in core is fine; crowding the fringe with guests blurs the split.",
+  },
+  {
+    a: "clean_core",
+    b: "waste_loop",
+    rivalryMult: 0.4,
+    note: "Sterile gut vs closed loop — mutually exclusive identities.",
+  },
+  {
+    a: "pressure_bloom",
+    b: "novelty_engine",
+    rivalryMult: 0.8,
+    note: "Defensive daughters vs restless vault genetics.",
   },
 ];
 

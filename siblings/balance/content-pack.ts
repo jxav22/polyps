@@ -24,7 +24,7 @@ export const STRUCTURES: StructureDef[] = [
     description: "Active feeding arm. Burns energy for nutrients.",
     tags: ["feed", "predation", "limb"],
     cost: { biomass: 4, energy: 2 },
-    upkeep: { energy: -0.25 },
+    upkeep: { energy: -0.15 },
     produce: { nutrients: 0.9 },
     envAffinity: { ambientNutrients: 0.5, current: 0.6, predatorPressure: -0.2 },
     unlock: { requiresStructures: { absorber: 1 } },
@@ -36,12 +36,12 @@ export const STRUCTURES: StructureDef[] = [
     name: "Digestive Chamber",
     description: "Converts nutrients into energy and waste.",
     tags: ["digest", "metabolic", "core"],
-    cost: { biomass: 8, energy: 4, nutrients: 6 },
+    cost: { biomass: 6, energy: 3, nutrients: 4 },
     upkeep: { energy: -0.1 },
     convert: [
-      { from: "nutrients", to: "energy", rate: 0.8, efficiency: 0.7 },
+      { from: "nutrients", to: "energy", rate: 1.0, efficiency: 0.75 },
     ],
-    produce: { waste: 0.25 },
+    produce: { waste: 0.18 },
     envAffinity: { temperature: 0.4 },
     unlock: { requiresStructures: { tentacle: 1 } },
     maxCount: 8,
@@ -334,10 +334,11 @@ export const ADAPTATION_BY_ID = Object.fromEntries(
   ADAPTATIONS.map((a) => [a.id, a]),
 ) as Record<string, AdaptationDef>;
 
+/** Aligned toward content/balance.ts but with minerals>0 so membrane/symbiont aren't instantly soft-locked */
 export const START_RESOURCES = {
   nutrients: 8,
   energy: 8,
-  biomass: 12,
+  biomass: 10,
   genetic: 0,
   minerals: 3,
   waste: 0,

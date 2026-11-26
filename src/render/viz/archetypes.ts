@@ -14,7 +14,11 @@ export interface DrawCtx {
 
 function pulseScale(node: LaidOutNode, time: number): number {
   const p = node.pulse || 1;
-  return 1 + Math.sin(time * (1.4 + p) + node.angle) * 0.06 * p;
+  const growth = node.growth ?? 1;
+  // Overshoot pop while growing in
+  const birth =
+    growth < 1 ? 0.15 * Math.sin(growth * Math.PI) * (1 - growth) : 0;
+  return 1 + Math.sin(time * (1.4 + p) + node.angle) * 0.06 * p + birth;
 }
 
 function blobPath(
@@ -342,20 +346,38 @@ const DRAWERS: Record<string, (d: DrawCtx, n: LaidOutNode) => void> = {
 
 export function drawArchetype(d: DrawCtx, node: LaidOutNode): void {
   const fn = DRAWERS[node.archetype] ?? drawCore;
-  fn(d, node);
-  if (d.selectedId === node.id) {
-    const { ctx, time } = d;
+  const { ctx, time } = d;
+  const selected = d.selectedId === node.id;
+  const growth = node.growth ?? 1;
+
+  // Soft birth veil while tweening in
+  if (growth < 0.98) {
+    ctx.save();
+    ctx.globalAlpha = 0.25 + growth * 0.75;
+    const pop = 1 + (1 - growth) * 0.35;
+    ctx.translate(node.pos.x, node.pos.y);
+    ctx.scale(pop, pop);
+    ctx.translate(-node.pos.x, -node.pos.y);
+    fn(d, node);
+    ctx.restore();
+  } else {
+    fn(d, node);
+  }
+
+  if (selected) {
+    const beat = 0.5 + 0.5 * Math.sin(time * 5);
+    const rr = node.radius * (1.5 + beat * 0.08);
     ctx.beginPath();
-    ctx.arc(
-      node.pos.x,
-      node.pos.y,
-      node.radius * 1.45 + Math.sin(time * 4) * 2,
-      0,
-      Math.PI * 2
-    );
-    ctx.strokeStyle = glowColor(node.hue, 0.65, 80);
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 4]);
+    ctx.arc(node.pos.x, node.pos.y, rr, 0, Math.PI * 2);
+    ctx.strokeStyle = glowColor(node.hue, 0.55 + beat * 0.25, 82);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // Inner confirm tick
+    ctx.beginPath();
+    ctx.arc(node.pos.x, node.pos.y, node.radius * 1.2, 0, Math.PI * 2);
+    ctx.strokeStyle = glowColor(node.hue + 15, 0.25 + beat * 0.15, 88);
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 5]);
     ctx.stroke();
     ctx.setLineDash([]);
   }

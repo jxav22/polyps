@@ -72,7 +72,7 @@ export function createColony(): ColonyState {
     neighbors: neighborSlots(0),
     growth: 1,
   };
-  // Lead override: slightly richer than pack START so tentacle is reachable in first minute.
+  // Lead: pack START minerals=3; slight biomass bump so tentacle is reachable in first minute.
   return {
     time: 0,
     resources: {
@@ -80,7 +80,7 @@ export function createColony(): ColonyState {
       energy: Math.max(START_RESOURCES.energy, 4),
       biomass: Math.max(START_RESOURCES.biomass, 6),
       genetic: START_RESOURCES.genetic,
-      minerals: Math.max(START_RESOURCES.minerals, 1),
+      minerals: START_RESOURCES.minerals,
       waste: START_RESOURCES.waste,
     },
     structures: [core],

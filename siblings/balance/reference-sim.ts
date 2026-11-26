@@ -344,11 +344,44 @@ function tickOnce(state: SimState, dt: number): void {
 
   // Ambient trickle + milestone genetic
   delta.nutrients += 0.05 * state.env.ambientNutrients * dt;
-  delta.minerals += 0.01 * dt;
+  delta.minerals += 0.015 * dt;
+  // Baseline metabolic spark (light-linked) so anabolism isn't dead when energy hits 0
+  delta.energy += 0.12 * state.env.light * dt;
+
+  // Core anabolism: energy + nutrients (+ trace minerals) → biomass
+  // Brief: "energy+minerals→biomass structures". Content pack has no producer —
+  // without this, colony soft-locks after spending starter biomass.
+  // Keep an energy reserve so pathway builds (symbiont/sensor/…) remain affordable.
+  {
+    const ENERGY_RESERVE = 4;
+    const energyAvail = Math.max(
+      0,
+      state.resources.energy + delta.energy - ENERGY_RESERVE,
+    );
+    const nutAvail = state.resources.nutrients + delta.nutrients;
+    const minAvail = state.resources.minerals + delta.minerals;
+    const rate = 0.45 * dt;
+    const takeE = Math.min(Math.max(0, energyAvail), rate);
+    const takeN = Math.min(Math.max(0, nutAvail), rate * 0.8);
+    const takeM = Math.min(Math.max(0, minAvail), rate * 0.05);
+    const made =
+      Math.min(takeE, takeN / 0.8) *
+      (0.85 + 0.15 * Math.min(1, takeM / (rate * 0.05 || 1)));
+    if (made > 0) {
+      delta.energy -= made;
+      delta.nutrients -= made * 0.8;
+      delta.minerals -= made * 0.05;
+      delta.biomass += made * 0.9;
+    }
+  }
 
   // Soft genetic from novelty: unique structure types * time factor
   const unique = new Set(state.structures.map((s) => s.defId)).size;
-  delta.genetic += 0.01 * unique * dt;
+  delta.genetic += 0.015 * unique * dt;
+  // Milestone genetic while digesting
+  if ((countByDef(state.structures).chamber ?? 0) > 0) {
+    delta.genetic += 0.02 * dt;
+  }
 
   addBag(state.resources, delta);
   sanitizeResources(state.resources);

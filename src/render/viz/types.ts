@@ -67,6 +67,8 @@ export interface FlashEvent {
   born: number;
   duration: number;
   strength: number;
+  /** "upgrade" = bloom+ring; "select" = soft confirm ping */
+  kind?: "upgrade" | "select" | "birth";
 }
 
 export interface Particle {
@@ -78,7 +80,7 @@ export interface Particle {
   maxLife: number;
   hue: number;
   size: number;
-  kind: "nutrient" | "mote" | "spark" | "waste";
+  kind: "nutrient" | "mote" | "spark" | "waste" | "trail";
 }
 
 export interface ColonyRendererOptions {

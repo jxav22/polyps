@@ -40,8 +40,12 @@ export interface Modifier {
   /** optional condition evaluated by sim */
   when?: {
     minStructures?: Partial<Record<string, number>>;
+    /** count must be <= n (use for identity builds e.g. no tentacles) */
+    maxStructures?: Partial<Record<string, number>>;
     env?: Partial<Record<EnvId, { min?: number; max?: number }>>;
     adjacentTags?: string[];
+    /** if set, ALL listed tags must be absent from adjacentTags */
+    forbidAdjacentTags?: string[];
   };
 }
 

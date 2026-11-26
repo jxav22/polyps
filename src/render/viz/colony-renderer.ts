@@ -25,6 +25,7 @@ import {
 import { ARCHETYPE_HUE } from "./palette.ts";
 import {
   drawFlashes,
+  drawFlowBeads,
   drawParticles,
   spawnFlash,
   spawnSparks,
@@ -139,17 +140,19 @@ export class ColonyRenderer {
   }
 
   /** Flash + sparks at a node (upgrade / build feedback). */
-  flashNode(nodeId: string, strength = 1): void {
+  flashNode(nodeId: string, strength = 1, kind: "upgrade" | "select" | "birth" = "upgrade"): void {
     const n = this.laid.find((x) => x.id === nodeId);
     if (!n) return;
-    this.flashes.push(spawnFlash(n.pos, n.hue, this.time, strength));
-    this.particles.push(...spawnSparks(n.pos, n.hue, Math.floor(8 + strength * 8)));
+    this.flashes.push(spawnFlash(n.pos, n.hue, this.time, strength, kind));
+    if (kind !== "select") {
+      this.particles.push(...spawnSparks(n.pos, n.hue, Math.floor(10 + strength * 10)));
+    }
   }
 
   /** Flash at world coords (e.g. prestige). */
   flashAt(x: number, y: number, hue = 180, strength = 1): void {
-    this.flashes.push(spawnFlash({ x, y }, hue, this.time, strength));
-    this.particles.push(...spawnSparks({ x, y }, hue, 14));
+    this.flashes.push(spawnFlash({ x, y }, hue, this.time, strength, "upgrade"));
+    this.particles.push(...spawnSparks({ x, y }, hue, 16));
   }
 
   getSelectedId(): string | null {
@@ -199,14 +202,22 @@ export class ColonyRenderer {
       const w = this.screenToWorld(e.clientX, e.clientY);
       const hit = hitTest(this.laid, w);
       this.selectedId = hit?.id ?? null;
+      if (hit) this.flashNode(hit.id, 0.7, "select");
       this.onClick?.(hit, e);
     });
   }
+
+  private birthFlashed = new Set<string>();
 
   private tickGrowth(dt: number): void {
     if (!this.snapshot) return;
     let dirty = false;
     for (const [id, g] of [...this.growing.entries()]) {
+      if (g < 0.15 && !this.birthFlashed.has(id)) {
+        this.birthFlashed.add(id);
+        // Defer flash until laid has the node
+        queueMicrotask(() => this.flashNode(id, 1.1, "birth"));
+      }
       const next = Math.min(1, g + dt * 1.6);
       if (next >= 1) {
         this.growing.delete(id);
@@ -215,6 +226,10 @@ export class ColonyRenderer {
         this.growing.set(id, next);
         dirty = true;
       }
+    }
+    // Prune birth set for removed nodes
+    for (const id of this.birthFlashed) {
+      if (!this.snapshot.nodes.some((n) => n.id === id)) this.birthFlashed.delete(id);
     }
     if (dirty) {
       const nodes = this.snapshot.nodes.map((n) => ({
@@ -293,7 +308,10 @@ export class ColonyRenderer {
       for (const e of this.edges) {
         const a = byId.get(e.from);
         const b = byId.get(e.to);
-        if (a && b) drawConnection(ctx, a, b, t, e.flow ?? 0.45);
+        if (a && b) {
+          drawConnection(ctx, a, b, t, e.flow ?? 0.45);
+          drawFlowBeads(ctx, a, b, t, e.flow ?? 0.45);
+        }
       }
     }
 
@@ -307,14 +325,22 @@ export class ColonyRenderer {
     const drawCtx = {
       ctx,
       time: t,
-      selectedId: this.selectedId ?? this.hoverId,
+      selectedId: this.selectedId,
     };
     for (const n of order) {
-      // Hover breathe
-      if (n.id === this.hoverId && n.id !== this.selectedId) {
+      const hovering = n.id === this.hoverId && n.id !== this.selectedId;
+      if (hovering) {
         ctx.save();
-        ctx.globalAlpha = 0.9;
-        drawArchetype(drawCtx, { ...n, pulse: n.pulse * 1.25 });
+        // Hover: slight scale + brighter pulse so target is obvious
+        ctx.translate(n.pos.x, n.pos.y);
+        ctx.scale(1.08, 1.08);
+        ctx.translate(-n.pos.x, -n.pos.y);
+        drawArchetype(drawCtx, { ...n, pulse: n.pulse * 1.35 });
+        ctx.beginPath();
+        ctx.arc(n.pos.x, n.pos.y, n.radius * 1.35, 0, Math.PI * 2);
+        ctx.strokeStyle = `hsla(${n.hue}, 70%, 75%, 0.35)`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
         ctx.restore();
       } else {
         drawArchetype(drawCtx, n);
