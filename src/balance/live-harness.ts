@@ -169,10 +169,15 @@ export function runLivePathway(pathway: string, durationSec = 900): PathwayRepor
         }
       }
     }
+    // Prestige~ = real PRESTIGE_SIGNALS flags only (not genetic stockpile heuristic)
     if (
       timeToPrestigeVisible === null &&
-      (state.resources.genetic >= 15 ||
-        state.flags.some((f) => f.includes("prestige") || f.includes("spore")))
+      state.flags.some(
+        (f) =>
+          f === "prestige_ready" ||
+          f === "can-prestige" ||
+          f === "seen_prestige_ui",
+      )
     ) {
       timeToPrestigeVisible = state.time;
     }

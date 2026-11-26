@@ -1,15 +1,15 @@
 # Live sim harness results
 
-Generated: 2026-11-26T16:18:08.567Z
+Generated: 2026-11-26T16:22:16.427Z
 Engine: real `src/sim` (createColony / tick / applyCommand)
 
 | Pathway | 1st unlock | Fork | Prestige~ | Genetic | Loop? | Structures |
 |---|---:|---:|---:|---:|---|---|
-| predatory | 3 | 134 | 327 | 100.9 | no | `{"absorber":6,"tentacle":6,"chamber":8,"membrane":8,"sensor":6,"venom":3}` |
-| photo | 3 | 41 | 378 | 71.1 | no | `{"absorber":6,"tentacle":6,"chamber":8,"symbiont":10,"membrane":7}` |
-| symbiotic | 3 | 38 | 254 | 81.9 | no | `{"absorber":6,"tentacle":6,"chamber":8,"bacteria":10,"membrane":5,"waste_symbiont":2}` |
-| colonial | 3 | 200 | 356 | 92.7 | no | `{"absorber":6,"tentacle":6,"chamber":8,"symbiont":10,"vessel":6,"bud":1}` |
-| metabolic | 3 | 145 | 244 | 82.6 | no | `{"absorber":6,"tentacle":6,"chamber":8,"bacteria":10,"membrane":4,"filter_plate":3}` |
+| predatory | 3 | 134 | 720 | 100.9 | no | `{"absorber":6,"tentacle":6,"chamber":8,"membrane":8,"sensor":6,"venom":3}` |
+| photo | 3 | 41 | 720 | 71.1 | no | `{"absorber":6,"tentacle":6,"chamber":8,"symbiont":10,"membrane":7}` |
+| symbiotic | 3 | 38 | 720 | 81.9 | no | `{"absorber":6,"tentacle":6,"chamber":8,"bacteria":10,"membrane":5,"waste_symbiont":2}` |
+| colonial | 3 | 200 | 720 | 92.7 | no | `{"absorber":6,"tentacle":6,"chamber":8,"symbiont":10,"vessel":6,"bud":1}` |
+| metabolic | 3 | 145 | 720 | 82.6 | no | `{"absorber":6,"tentacle":6,"chamber":8,"bacteria":10,"membrane":4,"filter_plate":3}` |
 
 ## Detail
 
