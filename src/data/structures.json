@@ -1,0 +1,26 @@
+{
+  "_comment": "Mirror of structures.ts for data tooling; TS is source of truth.",
+  "structures": [
+    "absorber",
+    "tentacle",
+    "chamber",
+    "symbiont",
+    "waste_symbiont",
+    "membrane",
+    "sensor",
+    "venom",
+    "vessel",
+    "bud",
+    "bacteria",
+    "mineral_gland",
+    "spore_vault",
+    "filter_plate",
+    "nest",
+    "lumophore"
+  ],
+  "paceNotes": {
+    "absorberToTentacleSec": [60, 120],
+    "tentacleToChamberSec": [120, 180],
+    "chamberToForkSec": [300, 480]
+  }
+}

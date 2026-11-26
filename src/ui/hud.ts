@@ -211,9 +211,9 @@ function formatSyn(id: string): string {
 }
 
 function tutorialText(step: number): string {
-  if (step <= 0) return "Grow a <strong>Digestive Chamber</strong> — turn nutrients into energy.";
-  if (step === 1) return "Extend a <strong>Tentacle</strong> to feed faster.";
-  if (step === 2) return "Add a <strong>Photosymbiont</strong> or <strong>Waste Bacteria</strong> — open a pathway.";
+  if (step <= 0) return "Grow a <strong>Tentacle</strong> — reach farther, then digest.";
+  if (step === 1) return "Grow a <strong>Digestive Chamber</strong> — nutrients become energy (+ waste).";
+  if (step === 2) return "Close the loop: <strong>Bacteria</strong> / symbiont, or lean into light / hunt.";
   return "";
 }
 

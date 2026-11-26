@@ -1,4 +1,6 @@
 import { ADAPTATION_DEFS, ADAPTATION_MAP } from "../data/adaptations.ts";
+import { START_RESOURCES } from "../data/balance.ts";
+import { SPORE_DRIFT } from "../data/prestige.ts";
 import { STRUCTURE_MAP } from "../data/structures.ts";
 import {
   addBag,
@@ -70,15 +72,16 @@ export function createColony(): ColonyState {
     neighbors: neighborSlots(0),
     growth: 1,
   };
+  // Lead override: slightly richer than pack START so tentacle is reachable in first minute.
   return {
     time: 0,
     resources: {
-      nutrients: 6,
-      energy: 3,
-      biomass: 8,
-      genetic: 0,
-      minerals: 2,
-      waste: 0,
+      nutrients: Math.max(START_RESOURCES.nutrients, 5),
+      energy: Math.max(START_RESOURCES.energy, 4),
+      biomass: Math.max(START_RESOURCES.biomass, 6),
+      genetic: START_RESOURCES.genetic,
+      minerals: Math.max(START_RESOURCES.minerals, 1),
+      waste: START_RESOURCES.waste,
     },
     structures: [core],
     adaptations: [],
@@ -89,9 +92,9 @@ export function createColony(): ColonyState {
     nextId: 1,
     rates: emptyBag(),
     tutorialStep: 0,
-    message: "Absorb. Digest. Grow.",
+    message: "Absorb. Reach. Digest.",
     activeSynergies: [],
-    gameSpeed: 1.35, // accelerate early game
+    gameSpeed: 1.45, // accelerate early game toward pack pace anchors
   };
 }
 
@@ -179,13 +182,16 @@ function buildStructure(state: ColonyState, defId: string, slot?: number): Colon
 
   let tutorialStep = state.tutorialStep;
   let message = `Grew ${def.name}.`;
-  if (tutorialStep === 0 && defId === "chamber") {
+  if (tutorialStep === 0 && defId === "tentacle") {
     tutorialStep = 1;
-    message = "Chamber online — nutrients become energy.";
-  } else if (tutorialStep <= 1 && defId === "tentacle") {
+    message = "Tentacle reaches — now digest what you catch.";
+  } else if (tutorialStep <= 1 && defId === "chamber") {
     tutorialStep = 2;
-    message = "Tentacle reaches. Feed the colony.";
-  } else if (tutorialStep <= 2 && (defId === "symbiont" || defId === "bacteria")) {
+    message = "Chamber online — nutrients become energy (+ waste).";
+  } else if (
+    tutorialStep <= 2 &&
+    (defId === "symbiont" || defId === "bacteria" || defId === "waste_symbiont")
+  ) {
     tutorialStep = 3;
     message = "A pathway opens. Compose synergies.";
   }
@@ -250,25 +256,30 @@ function buyAdaptation(state: ColonyState, adaptationId: string): ColonyState {
 
 /** Prestige: Spore Drift — reset colony, keep relics + pathway progress. */
 function sporeDrift(state: ColonyState): ColonyState {
-  const totalStructures = state.structures.length;
-  if (totalStructures < 5 && state.time < 180) {
+  const need = SPORE_DRIFT.driftCost;
+  if (state.structures.length < 5 || state.resources.biomass < need.minBiomass) {
     return { ...state, message: "Colony too young to drift." };
   }
-  const geneticKept = Math.floor(state.resources.genetic * 0.25) + state.prestige;
+  if (state.resources.genetic < need.minGenetic && state.time < (SPORE_DRIFT.visibleWhen.minTime ?? 720)) {
+    return { ...state, message: "Not enough genetic pressure to spore." };
+  }
+  const frac = SPORE_DRIFT.keep.geneticFraction;
+  const geneticKept = Math.floor(state.resources.genetic * frac) + state.prestige;
   const next = createColony();
+  const earnedRelics = state.adaptations.filter((a) => ADAPTATION_MAP[a]?.permanentRelic);
   return {
     ...next,
     prestige: state.prestige + 1,
-    relics: [...new Set([...state.relics, ...state.adaptations.filter((a) => ADAPTATION_MAP[a]?.permanentRelic)])],
+    relics: [...new Set([...state.relics, ...earnedRelics])],
     adaptations: [...state.relics],
     resources: {
       ...next.resources,
       genetic: geneticKept + 2,
       biomass: next.resources.biomass + 4 + state.prestige * 2,
-      minerals: next.resources.minerals + state.prestige,
+      minerals: next.resources.minerals + 1 + state.prestige,
     },
     flags: ["started", "drifted", ...state.relics.map((r) => `relic:${r}`)],
-    gameSpeed: 1.35 + state.prestige * 0.08,
+    gameSpeed: 1.45 + state.prestige * 0.08,
     message: `Spore Drift #${state.prestige + 1}. Relics endure.`,
     tutorialStep: 3,
   };

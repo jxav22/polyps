@@ -1,6 +1,11 @@
 import { ADAPTATION_MAP } from "../data/adaptations.ts";
+import { GLOBAL_RATE, SOFT_CAPS } from "../data/balance.ts";
 import { STRUCTURE_MAP } from "../data/structures.ts";
-import { SYNERGY_MODIFIERS } from "../data/synergies.ts";
+import {
+  SYNERGIES,
+  SYNERGY_MODIFIERS,
+  SYNERGY_RIVALRIES,
+} from "../data/synergies.ts";
 import {
   addBag,
   clampBag,
@@ -11,14 +16,17 @@ import {
   RESOURCE_IDS,
 } from "./resources.ts";
 import { envRecord, tickEnvironment } from "./environment.ts";
-import { foldModifiers, type Modifier, type ModifierContext } from "./modifiers.ts";
+import {
+  foldModifiers,
+  type Modifier,
+  type ModifierContext,
+} from "./modifiers.ts";
 import { countByDef, type StructureInstance } from "./structures.ts";
 import type { ColonyState } from "./colony.ts";
 
 const FIXED_DT = 1 / 20;
 
 export function tick(state: ColonyState, dt: number): ColonyState {
-  // Frame-rate independent accumulator-style: clamp big frames, scale by gameSpeed
   const steps = Math.max(1, Math.min(8, Math.round((dt * state.gameSpeed) / FIXED_DT)));
   const stepDt = (dt * state.gameSpeed) / steps;
   let s = state;
@@ -32,6 +40,7 @@ function tickOnce(state: ColonyState, dt: number): ColonyState {
   const env = tickEnvironment(state.env, dt);
   const counts = countByDef(state.structures);
   const envRec = envRecord(env);
+  const rate = GLOBAL_RATE * (1 + state.prestige * 0.04);
 
   const globalMods: Modifier[] = [...SYNERGY_MODIFIERS];
   for (const aid of [...state.adaptations, ...state.relics]) {
@@ -39,18 +48,56 @@ function tickOnce(state: ColonyState, dt: number): ColonyState {
     if (a) globalMods.push(...a.modifiers);
   }
 
+  // Colony-wide tag presence (used as soft adjacency for global synergy eval)
+  const presentTags = new Set<string>();
+  for (const s of state.structures) {
+    STRUCTURE_MAP[s.defId]?.tags.forEach((t) => presentTags.add(t));
+  }
+  // Tags that appear on at least one neighbor pair
+  const adjacentTagSet = new Set<string>();
+  const bySlot = new Map(state.structures.map((s) => [s.slot, s]));
+  for (const s of state.structures) {
+    for (const n of s.neighbors) {
+      const other = bySlot.get(n);
+      if (!other) continue;
+      STRUCTURE_MAP[other.defId]?.tags.forEach((t) => adjacentTagSet.add(t));
+    }
+  }
+
   const baseCtx: ModifierContext = {
     structureCounts: counts,
     env: envRec,
-    adjacentTags: [],
-    activeTags: Object.keys(counts),
+    adjacentTags: [...adjacentTagSet],
+    activeTags: [...presentTags],
   };
 
-  const activeSynergies = SYNERGY_MODIFIERS.filter((m) => {
-    const folded = foldModifiers([m], baseCtx, []);
-    // reuse applicability via fold's when check — call modifierApplies indirectly
-    return Object.keys(folded).length >= 0 && synergyActive(m, baseCtx);
-  }).map((m) => m.id);
+  const activeSynergies = SYNERGIES.filter((syn) => {
+    const recipe = syn.recipe;
+    if (recipe.minStructures) {
+      for (const [id, n] of Object.entries(recipe.minStructures)) {
+        if ((counts[id] ?? 0) < (n ?? 0)) return false;
+      }
+    }
+    if (recipe.env) {
+      for (const [k, range] of Object.entries(recipe.env)) {
+        const v = envRec[k as keyof typeof envRec] ?? 0;
+        if (range?.min !== undefined && v < range.min) return false;
+        if (range?.max !== undefined && v > range.max) return false;
+      }
+    }
+    if (recipe.requireTags?.length) {
+      for (const t of recipe.requireTags) {
+        if (!presentTags.has(t)) return false;
+      }
+    }
+    if (recipe.adjacentTags?.length) {
+      for (const t of recipe.adjacentTags) {
+        if (!adjacentTagSet.has(t)) return false;
+      }
+    }
+    // Recipe satisfied ⇒ active; modifier.when is applied when folding channels
+    return true;
+  }).map((s) => s.id);
 
   const channelMods = foldModifiers(globalMods, baseCtx, [
     "produce",
@@ -64,10 +111,34 @@ function tickOnce(state: ColonyState, dt: number): ColonyState {
     "produce.waste",
   ]);
 
-  // Membrane / photo-shield softens disturbance & predator drain
+  // Rivalries: both synergies active → soft identity tax on produce
+  let rivalryMult = 1;
+  const activeSet = new Set(activeSynergies);
+  for (const r of SYNERGY_RIVALRIES) {
+    if (activeSet.has(r.a) && activeSet.has(r.b)) {
+      rivalryMult *= r.rivalryMult;
+    }
+  }
+
   const membraneCount = counts["membrane"] ?? 0;
-  const defense = 1 / (1 + membraneCount * 0.35 + ((counts["symbiont"] ?? 0) > 0 && membraneCount > 0 ? 0.25 : 0));
+  const defense =
+    1 /
+    (1 +
+      membraneCount * 0.35 +
+      ((counts["symbiont"] ?? 0) > 0 && membraneCount > 0 ? 0.25 : 0));
   const stress = (env.disturbance * 0.4 + env.predatorPressure * 0.25) * defense;
+
+  // Waste soft yield floor
+  let wasteMult = 1;
+  if (state.resources.waste > SOFT_CAPS.wastePenaltyStart) {
+    const t = Math.min(
+      1,
+      (state.resources.waste - SOFT_CAPS.wastePenaltyStart) /
+        (SOFT_CAPS.wastePenaltyFull - SOFT_CAPS.wastePenaltyStart),
+    );
+    const hasLoop = activeSynergies.includes("waste_loop");
+    wasteMult = hasLoop ? 1 - t * 0.15 : 1 - t * (1 - SOFT_CAPS.wasteYieldFloor);
+  }
 
   let delta = emptyBag();
   const structures = state.structures.map((inst) => tickStructureGrowth(inst, dt));
@@ -76,8 +147,21 @@ function tickOnce(state: ColonyState, dt: number): ColonyState {
     const def = STRUCTURE_MAP[inst.defId];
     if (!def || inst.growth < 0.4) continue;
     const maturity = Math.min(1, inst.growth);
-
     const adjTags = adjacentTags(inst, structures);
+
+    // Adjacency structure modifiers (vessel grid, etc.)
+    let adjMult = 1;
+    if (def.adjacencyBonus) {
+      const ok = def.adjacencyBonus.requireTags.every((t) => adjTags.includes(t));
+      if (ok) {
+        const folded = foldModifiers(def.adjacencyBonus.modifiers, {
+          ...baseCtx,
+          adjacentTags: adjTags,
+        }, ["produce", "convert", "upkeep"]);
+        adjMult *= folded["produce"] ?? 1;
+      }
+    }
+
     const vesselBonus =
       adjTags.filter((t) => t === "vessel").length > 0 && def.tags.includes("vessel")
         ? 1.12
@@ -85,7 +169,6 @@ function tickOnce(state: ColonyState, dt: number): ColonyState {
           ? 1.06
           : 1;
 
-    // Env affinity scalar
     let affinity = 1;
     if (def.envAffinity) {
       let sum = 0;
@@ -101,63 +184,61 @@ function tickOnce(state: ColonyState, dt: number): ColonyState {
 
     const localMult =
       (channelMods["produce"] ?? 1) *
+      adjMult *
       vesselBonus *
       affinity *
       maturity *
+      wasteMult *
+      rivalryMult *
       (1 - stress * 0.5) *
-      (1 + state.prestige * 0.04);
+      rate;
 
     if (def.produce) {
       for (const id of RESOURCE_IDS) {
         const base = def.produce[id];
-        if (base === undefined) continue;
-        const ch = channelMods[`produce.${id}`] ?? 1;
+        if (base === undefined || base === 0) continue;
+        let ch = channelMods[`produce.${id}`] ?? 1;
+        ch *= tagChannelMult(channelMods, def.tags, `produce.${id}`);
+        ch *= tagChannelMult(channelMods, def.tags, "produce");
         delta[id] += base * localMult * ch * dt;
       }
     }
 
+    // Signed upkeep: negative consumes (matches interfaces.ts)
     if (def.upkeep) {
-      const upkeepMult = channelMods["upkeep"] ?? 1;
+      const upkeepMult = (channelMods["upkeep"] ?? 1) * maturity * rate;
       for (const id of RESOURCE_IDS) {
         const base = def.upkeep[id];
-        if (base === undefined) continue;
-        delta[id] -= base * upkeepMult * maturity * dt;
+        if (base === undefined || base === 0) continue;
+        let ch = tagChannelMult(channelMods, def.tags, `upkeep.${id}`);
+        delta[id] += base * upkeepMult * ch * dt;
       }
     }
 
     if (def.convert) {
-      const convertMult = (channelMods["convert"] ?? 1) * vesselBonus * maturity;
+      const convertMult = (channelMods["convert"] ?? 1) * vesselBonus * maturity * rate;
       for (const c of def.convert) {
         const available = state.resources[c.from] + delta[c.from];
         const want = c.rate * convertMult * dt;
         const used = Math.max(0, Math.min(available, want));
         delta[c.from] -= used;
         delta[c.to] += used * c.efficiency;
-        // chambers also shed a bit of waste already via produce
       }
     }
   }
 
-  // Ambient feed into absorber already via produce+affinity; add trickle minerals from current
-  delta.minerals += env.ambientNutrients * 0.04 * dt;
-  delta.genetic += (Object.keys(counts).length > 3 ? 0.02 : 0.008) * dt;
+  delta.minerals += env.ambientNutrients * 0.03 * rate * dt;
+  delta.genetic += (Object.keys(counts).length > 3 ? 0.03 : 0.012) * rate * dt;
 
-  // Waste toxicity soft pressure — high waste slows energy production (applied as energy drain)
-  if (state.resources.waste > 25) {
-    const toxin = Math.min(2, (state.resources.waste - 25) * 0.04);
-    delta.energy -= toxin * dt;
-  }
-
-  // Biomass synthesis: gentle sink so energy abundance becomes mass
-  if (state.resources.energy > 12 && state.resources.minerals > 1.5) {
-    const synth = Math.min(state.resources.energy * 0.02, 0.25) * dt;
-    delta.energy -= synth * 1.1;
-    delta.minerals -= synth * 0.2;
-    delta.biomass += synth * 0.95;
+  // Gentle biomass synthesis so early tentacle is reachable
+  if (state.resources.energy > 5 && state.resources.nutrients > 2) {
+    const synth = Math.min(0.2, state.resources.nutrients * 0.03) * rate * dt;
+    delta.nutrients -= synth;
+    delta.energy -= synth * 0.4;
+    delta.biomass += synth * 0.85;
   }
 
   let resources = addBag(state.resources, delta);
-  // Soft caps — never hard-block, just taper
   resources.nutrients = softCap(resources.nutrients, 80, 140);
   resources.energy = softCap(resources.energy, 70, 120);
   resources.biomass = softCap(resources.biomass, 60, 100);
@@ -177,14 +258,19 @@ function tickOnce(state: ColonyState, dt: number): ColonyState {
     flags = [...flags, "can-adapt"];
     message = "Genetic insight ready — adapt the colony.";
   }
-  if (state.time > 600 && counts["bud"] && !flags.includes("can-prestige")) {
-    flags = [...flags, "can-prestige"];
-    message = "Spore Drift awaits when you are ready.";
+  if (state.time > 300 && !flags.includes("seen_midgame")) {
+    flags = [...flags, "seen_midgame"];
   }
 
-  // Early prestige hint by ~12–15 min sim time (accelerated)
   const prestigeReady =
-    state.structures.length >= 6 && state.time >= 120 && (counts["bud"] ?? 0) >= 1;
+    state.structures.length >= 5 &&
+    state.time >= 720 &&
+    resources.genetic >= 15;
+
+  if (prestigeReady && !flags.includes("can-prestige")) {
+    flags = [...flags, "can-prestige"];
+    message = "Spore Drift visible on the horizon.";
+  }
 
   return {
     ...state,
@@ -194,30 +280,22 @@ function tickOnce(state: ColonyState, dt: number): ColonyState {
     resources,
     rates,
     activeSynergies,
-    flags: prestigeReady && !flags.includes("can-prestige") ? [...flags, "can-prestige"] : flags,
-    message:
-      prestigeReady && state.message === "Absorb. Digest. Grow."
-        ? "Spore Drift visible on the horizon."
-        : message,
+    flags,
+    message,
   };
 }
 
-function synergyActive(m: Modifier, ctx: ModifierContext): boolean {
-  const w = m.when;
-  if (!w) return true;
-  if (w.minStructures) {
-    for (const [id, n] of Object.entries(w.minStructures)) {
-      if ((ctx.structureCounts[id] ?? 0) < (n ?? 0)) return false;
-    }
+function tagChannelMult(
+  channels: Record<string, number>,
+  tags: string[],
+  suffix: string,
+): number {
+  let m = 1;
+  for (const tag of tags) {
+    const key = `tag.${tag}.${suffix}`;
+    if (channels[key] !== undefined) m *= channels[key]!;
   }
-  if (w.env) {
-    for (const [k, range] of Object.entries(w.env)) {
-      const v = ctx.env[k as keyof typeof ctx.env] ?? 0;
-      if (range.min !== undefined && v < range.min) return false;
-      if (range.max !== undefined && v > range.max) return false;
-    }
-  }
-  return true;
+  return m;
 }
 
 function adjacentTags(inst: StructureInstance, all: StructureInstance[]): string[] {
@@ -237,7 +315,11 @@ function tickStructureGrowth(inst: StructureInstance, dt: number): StructureInst
   return { ...inst, growth: Math.min(1, inst.growth + dt * 0.85) };
 }
 
-export function simulate(state: ColonyState, seconds: number, cmdEvery?: (t: number, s: ColonyState) => ColonyState): ColonyState {
+export function simulate(
+  state: ColonyState,
+  seconds: number,
+  cmdEvery?: (t: number, s: ColonyState) => ColonyState,
+): ColonyState {
   let s = state;
   const step = 0.25;
   for (let t = 0; t < seconds; t += step) {

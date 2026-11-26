@@ -11,41 +11,42 @@ describe("polyps sim", () => {
     expect(s1.time).toBeGreaterThan(s0.time);
   });
 
-  it("builds chamber and converts nutrients to energy", () => {
+  it("builds tentacle then chamber and converts nutrients to energy", () => {
     let s = createColony();
     s = {
       ...s,
-      resources: { ...s.resources, biomass: 20, minerals: 5, energy: 10 },
+      resources: { ...s.resources, biomass: 40, minerals: 10, energy: 20, nutrients: 20 },
     };
+    s = applyCommand(s, { type: "build", structureId: "tentacle" });
+    expect(s.structures.some((x) => x.defId === "tentacle")).toBe(true);
     s = applyCommand(s, { type: "build", structureId: "chamber" });
     expect(s.structures.some((x) => x.defId === "chamber")).toBe(true);
-    // grow chamber to maturity
     s = simulate(s, 3);
     const before = s.resources.energy;
-    // feed nutrients
     s = { ...s, resources: { ...s.resources, nutrients: 40 } };
     s = simulate(s, 5);
     expect(s.resources.energy).toBeGreaterThan(before);
     expect(s.resources.waste).toBeGreaterThan(0);
   });
 
-  it("activates waste-loop synergy with chamber + bacteria", () => {
+  it("activates waste_loop synergy with chamber + bacteria", () => {
     let s = createColony();
     s = {
       ...s,
       resources: {
-        nutrients: 30,
-        energy: 20,
-        biomass: 40,
-        genetic: 5,
+        nutrients: 40,
+        energy: 30,
+        biomass: 80,
+        genetic: 10,
         minerals: 20,
         waste: 10,
       },
     };
+    s = applyCommand(s, { type: "build", structureId: "tentacle" });
     s = applyCommand(s, { type: "build", structureId: "chamber" });
     s = applyCommand(s, { type: "build", structureId: "bacteria" });
     s = simulate(s, 4);
-    expect(s.activeSynergies).toContain("syn-waste-loop");
+    expect(s.activeSynergies).toContain("waste_loop");
   });
 
   it("snapshot is serializable and prestige requires maturity", () => {
@@ -54,7 +55,7 @@ describe("polyps sim", () => {
     expect(snap.structures.length).toBe(1);
     const blocked = applyCommand(s, { type: "prestige" });
     expect(blocked.prestige).toBe(0);
-    expect(blocked.message).toMatch(/young|Drift/i);
+    expect(blocked.message).toMatch(/young|spore|Drift|genetic/i);
   });
 
   it("deterministic for same seed sequence of ticks", () => {
