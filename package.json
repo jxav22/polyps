@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "balance": "tsx src/balance/harness.ts"
+    "balance": "tsx src/balance/harness.ts",
+    "balance:live": "tsx src/balance/live-harness.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.11",

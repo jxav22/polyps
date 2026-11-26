@@ -981,5 +981,5 @@ export const SYNERGY_RIVALRIES: Array<{ a: string; b: string; rivalryMult: numbe
   },
 ];
 
-/** Flattened modifiers for the tick evaluator */
+/** Flattened synergy modifiers for tick (patches-for-lead) */
 export const SYNERGY_MODIFIERS: Modifier[] = SYNERGIES.flatMap((s) => s.modifiers);

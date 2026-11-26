@@ -734,6 +734,6 @@ PATHWAY_ORDER.colonial.push("tagged_body");
 PATHWAY_ORDER.metabolic.push("still_covenant");
 PATHWAY_ORDER.symbiotic.push("rim_janitor");
 
-/** Lead runtime aliases */
+/** Alias for sim imports (patches-for-lead) */
 export const ADAPTATION_DEFS = ADAPTATIONS;
 export const ADAPTATION_MAP = ADAPTATIONS_BY_ID;

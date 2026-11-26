@@ -25,13 +25,16 @@ export const SOFT_CAPS = {
   membraneCurrentFeedPenaltyMax: 0.25,
 } as const;
 
-/** Starting resources after new game / post-drift */
+/**
+ * Canonical start bag (aligned with createColony).
+ * Harsh pack values (B2/M0) soft-lock membrane/symbiont — do not ship those.
+ */
 export const START_RESOURCES = {
-  nutrients: 2,
-  energy: 3,
-  biomass: 2,
+  nutrients: 6,
+  energy: 4,
+  biomass: 8,
   genetic: 0,
-  minerals: 3, // balance: membrane/symbiont mineral tax at fork
+  minerals: 3,
   waste: 0,
 } as const;
 

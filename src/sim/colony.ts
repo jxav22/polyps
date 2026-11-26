@@ -72,13 +72,12 @@ export function createColony(): ColonyState {
     neighbors: neighborSlots(0),
     growth: 1,
   };
-  // Lead: pack START minerals=3; slight biomass bump so tentacle is reachable in first minute.
   return {
     time: 0,
     resources: {
-      nutrients: Math.max(START_RESOURCES.nutrients, 5),
-      energy: Math.max(START_RESOURCES.energy, 4),
-      biomass: Math.max(START_RESOURCES.biomass, 6),
+      nutrients: START_RESOURCES.nutrients,
+      energy: START_RESOURCES.energy,
+      biomass: START_RESOURCES.biomass,
       genetic: START_RESOURCES.genetic,
       minerals: START_RESOURCES.minerals,
       waste: START_RESOURCES.waste,
@@ -202,7 +201,7 @@ function buildStructure(state: ColonyState, defId: string, slot?: number): Colon
   return {
     ...state,
     resources: clampBag(
-      addBag(pay(state.resources, def.cost), { genetic: geneticBonus, biomass: 0.5 }),
+      addBag(pay(state.resources, def.cost), { genetic: geneticBonus, biomass: 1.0 }),
     ),
     structures: [...state.structures, inst],
     nextId: state.nextId + 1,

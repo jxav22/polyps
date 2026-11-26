@@ -47,7 +47,7 @@ export const STRUCTURES: StructureDef[] = [
     },
     envAffinity: { ambientNutrients: 0.5, current: 0.6, predatorPressure: -0.2 },
     unlock: { requiresStructures: { absorber: 1 } },
-    maxCount: 12,
+    maxCount: 6,
     visual: { archetype: "tentacle", hue: 185, pulse: 0.7 },
   },
   {
@@ -62,7 +62,7 @@ export const STRUCTURES: StructureDef[] = [
       { from: "nutrients", to: "energy", rate: 0.8, efficiency: 0.7 },
       // waste is emitted as byproduct of digestion (sim applies waste = rate * (1-efficiency) or separate)
     ],
-    produce: { waste: 0.18 },
+    produce: { waste: 0.18, biomass: 0.05 },
     adjacencyBonus: {
       requireTags: ["bacteria", "waste"],
       modifiers: [
@@ -128,7 +128,7 @@ export const STRUCTURES: StructureDef[] = [
     description:
       "Biomass sink that softens predator pressure and disturbance. Blocks some nutrient current if overbuilt.",
     tags: ["defense", "membrane", "shell"],
-    cost: { biomass: 8, minerals: 2, energy: 3 },
+    cost: { biomass: 8, minerals: 1, energy: 2 },
     upkeep: { energy: -0.08, biomass: -0.02 },
     produce: {},
     adjacencyBonus: {
@@ -222,7 +222,7 @@ export const STRUCTURES: StructureDef[] = [
       ],
     },
     envAffinity: { current: 0.4 },
-    unlock: { requiresStructures: { chamber: 1 }, requiresGenetic: 5 },
+    unlock: { requiresStructures: { chamber: 1 }, requiresGenetic: 4 },
     maxCount: 14,
     visual: { archetype: "vessel", hue: 195, pulse: 0.6 },
   },
@@ -232,7 +232,7 @@ export const STRUCTURES: StructureDef[] = [
     description:
       "Spends biomass and genetic to spawn a daughter site that inherits chamber/symbiont traits. Crowding without vessels collapses yields.",
     tags: ["bud", "colonial", "reproduce"],
-    cost: { biomass: 12, genetic: 2, energy: 6 },
+    cost: { biomass: 12, genetic: 2, energy: 5 },
     upkeep: { nutrients: -0.15, energy: -0.1 },
     produce: { genetic: 0.04 },
     adjacencyBonus: {
@@ -247,7 +247,8 @@ export const STRUCTURES: StructureDef[] = [
       ],
     },
     envAffinity: { light: 0.4, ambientNutrients: 0.3 },
-    unlock: { requiresStructures: { chamber: 1, membrane: 1 }, requiresGenetic: 6 },
+    // Membrane optional — vessel logistics also unlocks colonial path
+    unlock: { requiresStructures: { chamber: 1, vessel: 1 }, requiresGenetic: 6 },
     maxCount: 5,
     visual: { archetype: "bud", hue: 310, pulse: 0.9 },
   },
@@ -259,7 +260,7 @@ export const STRUCTURES: StructureDef[] = [
     description:
       "Specialised waste processors. Thrive on chamber effluent; starve if the colony runs clean.",
     tags: ["bacteria", "waste", "metabolic", "digest"],
-    cost: { biomass: 3, energy: 2, nutrients: 4 },
+    cost: { biomass: 3, energy: 1, nutrients: 3 },
     upkeep: { energy: -0.05 },
     convert: [{ from: "waste", to: "energy", rate: 0.4, efficiency: 0.6 }],
     produce: { minerals: 0.03 },
@@ -274,7 +275,7 @@ export const STRUCTURES: StructureDef[] = [
       ],
     },
     envAffinity: { temperature: 0.5, light: -0.2 },
-    unlock: { requiresStructures: { chamber: 1 }, requiresGenetic: 3 },
+    unlock: { requiresStructures: { chamber: 1 }, requiresGenetic: 2 },
     maxCount: 10,
     visual: { archetype: "bacteria", hue: 55, pulse: 0.75 },
   },
@@ -298,7 +299,7 @@ export const STRUCTURES: StructureDef[] = [
       ],
     },
     envAffinity: { current: 0.9, ambientNutrients: 0.2 },
-    unlock: { requiresStructures: { vessel: 1 }, requiresGenetic: 7 },
+    unlock: { requiresStructures: { vessel: 1 }, requiresGenetic: 5 },
     maxCount: 4,
     visual: { archetype: "chamber", hue: 220, pulse: 0.45 },
   },
@@ -403,6 +404,6 @@ export const STRUCTURES_BY_ID: Record<string, StructureDef> = Object.fromEntries
   STRUCTURES.map((s) => [s.id, s]),
 );
 
-/** Lead runtime aliases */
+/** Alias for sim imports (patches-for-lead) */
 export const STRUCTURE_DEFS = STRUCTURES;
 export const STRUCTURE_MAP = STRUCTURES_BY_ID;

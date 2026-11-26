@@ -256,15 +256,22 @@ function tickOnce(state: ColonyState, dt: number): ColonyState {
     }
   }
 
-  delta.minerals += env.ambientNutrients * 0.03 * rate * dt;
-  delta.genetic += (Object.keys(counts).length > 3 ? 0.03 : 0.012) * rate * dt;
+  // Ambient mineral trickle from t=0 (prevents membrane/symbiont soft-lock)
+  delta.minerals += (0.05 + env.ambientNutrients * 0.04) * rate * dt;
+  delta.genetic += (Object.keys(counts).length > 3 ? 0.045 : 0.02) * rate * dt;
 
-  // Gentle biomass synthesis so early tentacle is reachable
-  if (state.resources.energy > 5 && state.resources.nutrients > 2) {
-    const synth = Math.min(0.2, state.resources.nutrients * 0.03) * rate * dt;
-    delta.nutrients -= synth;
-    delta.energy -= synth * 0.4;
-    delta.biomass += synth * 0.85;
+  /**
+   * Core anabolism — live harness found colonial dead without biomass income.
+   * Convert energy+nutrients → biomass while keeping an energy reserve.
+   */
+  const energyReserve = 3;
+  const availEnergy = state.resources.energy + delta.energy - energyReserve;
+  const availNutrients = state.resources.nutrients + delta.nutrients;
+  if (availEnergy > 0 && availNutrients > 0.5) {
+    const synthRate = Math.min(0.4, availEnergy * 0.15, availNutrients * 0.12) * rate * dt;
+    delta.nutrients -= synthRate;
+    delta.energy -= synthRate * 0.9;
+    delta.biomass += synthRate * 1.05;
   }
 
   let resources = addBag(state.resources, delta);
@@ -291,13 +298,16 @@ function tickOnce(state: ColonyState, dt: number): ColonyState {
     flags = [...flags, "seen_midgame"];
   }
 
+  // Prestige signal: genetic stock, lifetime novelty, or spore vault
+  const geneticLifetime = Math.max(resources.genetic, state.resources.genetic);
   const prestigeReady =
-    state.structures.length >= 5 &&
-    state.time >= 720 &&
-    resources.genetic >= 15;
+    (counts["spore_vault"] ?? 0) >= 1 ||
+    (state.structures.length >= 5 &&
+      state.time >= 720 &&
+      (resources.genetic >= 15 || geneticLifetime >= 16));
 
-  if (prestigeReady && !flags.includes("can-prestige")) {
-    flags = [...flags, "can-prestige"];
+  if (prestigeReady && !flags.includes("can-prestige") && !flags.includes("prestige_ready")) {
+    flags = [...flags, "can-prestige", "prestige_ready"];
     message = "Spore Drift visible on the horizon.";
   }
 
