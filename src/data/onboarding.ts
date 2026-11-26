@@ -91,11 +91,19 @@ export const ONBOARDING_HINTS: OnboardingHint[] = [
     highlight: "adapt",
   },
   {
+    id: "midgame_flag",
+    atTime: 300,
+    title: "The colony has a memory now",
+    body: "You've crossed into midgame. Relic goals appear in the journal — meet one before you Drift.",
+    completeWhen: { hasFlags: ["seen_midgame"] },
+    highlight: "adapt",
+  },
+  {
     id: "prestige_horizon",
     atTime: 660,
     title: "Spore Drift on the horizon",
-    body: "When biomass and genetic crest, you can release spores. Relics keep pathway memory — the colony resets, the lineage doesn't.",
-    completeWhen: { hasFlags: ["seen_prestige_ui"] },
+    body: "Lifetime genetic (≥16) or a Spore Vault opens the Drift panel — not your current genetic stockpile. Relics keep pathway memory.",
+    completeWhen: { hasFlags: ["seen_prestige_ui", "prestige_ready"] },
     highlight: "prestige",
   },
   {
@@ -108,6 +116,14 @@ export const ONBOARDING_HINTS: OnboardingHint[] = [
       hasSynergy: ["false_dawn", "bait_hunt", "filter_rim"],
     },
     highlight: "grow",
+  },
+  {
+    id: "relic_nudge",
+    atTime: 720,
+    title: "Leave something in the spores",
+    body: "Each pathway has a relic goal. Earn one before Drift — Fang Memory, Loop Cyst, Colony Spore, Echo Chloroplast, or Thrift Shell.",
+    completeWhen: { hasFlags: ["prestige_1", "first_wake_earned"] },
+    highlight: "prestige",
   },
 ];
 
