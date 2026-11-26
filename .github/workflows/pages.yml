@@ -1,5 +1,4 @@
-# Deploy Vite dist/ to GitHub Pages (project site /polyps/)
-name: Deploy GitHub Pages
+name: Deploy Pages
 
 on:
   push:
@@ -13,22 +12,45 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
-      - run: npm ci
-      - run: npm run build
-      - uses: actions/upload-pages-artifact@v3
+
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
           path: dist
+
+      - name: Zip dist for itch.io
+        run: |
+          cd dist
+          zip -r ../itch.zip .
+
+      - name: Upload itch.zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: itch-zip
+          path: itch.zip
 
   deploy:
     needs: build
@@ -37,5 +59,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - id: deployment
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
